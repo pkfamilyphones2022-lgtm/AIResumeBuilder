@@ -3,6 +3,8 @@ import { generateAIResume, improveAIResume, generateKeywordSuggestions } from ".
 import { calculateATS } from "../utils/ats.js";
 import { parseResumeDetails } from "../utils/resumeParser.js";
 import { structuredResumeToText } from "../utils/resumeText.js";
+import { createAiUsageLog, createUser, createResume } from "../db/queries.js";
+import { createChallenge, verifyChallenge } from "../utils/challenge.js";
 
 const atsGuidance = (score) =>
   score >= 95
@@ -13,33 +15,61 @@ const atsGuidance = (score) =>
 
 const refineTowardTarget = async ({ result, userData, jobDescription, targetScore = 95, maxPasses = 2 }) => {
   let current = result;
+  const usageLogs = [];
   let ats = calculateATS(structuredResumeToText(current), jobDescription, {
     jobTitle: userData?.targetTitle || current?.title || ""
   });
 
   for (let pass = 0; pass < maxPasses && ats.score < targetScore; pass += 1) {
-    const refined = await improveAIResume({
+    const refinedResponse = await improveAIResume({
       resumeData: current,
       userData,
       jobDescription,
       missingKeywords: ats.missing.slice(0, 16),
       currentScore: ats.score
     });
+    if (refinedResponse.usage) usageLogs.push(refinedResponse.usage);
+    const refined = refinedResponse.resume;
     const refinedAts = calculateATS(structuredResumeToText(refined), jobDescription, {
       jobTitle: userData?.targetTitle || refined?.title || current?.title || ""
     });
 
-    if (refinedAts.score < ats.score) break;
+    if (refinedAts.score < ats.score - 3) break; // allow minor fluctuations from AI randomness
     current = refined;
     ats = refinedAts;
   }
 
-  return { result: current, ats };
+  return { result: current, ats, usageLogs };
+};
+
+const persistAiUsage = ({ userId, resumeId, usageLogs = [] }) => {
+  for (const usage of usageLogs) {
+    if (!usage) continue;
+    createAiUsageLog({
+      userId,
+      resumeId,
+      purpose: usage.purpose,
+      provider: usage.provider,
+      model: usage.model,
+      promptTokens: usage.promptTokens,
+      completionTokens: usage.completionTokens,
+      totalTokens: usage.totalTokens,
+      costPaise: usage.costPaise
+    });
+  }
 };
 
 export const generateResume = async (req, res) => {
   try {
-    const { userData, jobDescription, resumeText } = req.body;
+    const { userData, jobDescription, resumeText, challengeId, challengeAnswer, website } = req.body;
+
+    if (website) {
+      return res.status(400).json({ error: "Automated request blocked." });
+    }
+
+    if (!verifyChallenge({ challengeId, answer: challengeAnswer })) {
+      return res.status(400).json({ error: "Please solve the security check before generating your resume." });
+    }
 
     const hasResumeSource = Boolean(resumeText?.trim());
     const hasManualDetail = Boolean(
@@ -52,21 +82,60 @@ export const generateResume = async (req, res) => {
       });
     }
 
-    const generated = await generateAIResume(userData, jobDescription, resumeText);
-    const { result, ats } = await refineTowardTarget({
+    const generatedResponse = await generateAIResume(userData, jobDescription, resumeText);
+    const generated = generatedResponse.resume;
+    const { result, ats, usageLogs: refineUsageLogs } = await refineTowardTarget({
       result: generated,
       userData,
       jobDescription,
       targetScore: 95,
       maxPasses: 2
     });
+    const usageLogs = [generatedResponse.usage, ...refineUsageLogs].filter(Boolean);
     const guidance = atsGuidance(ats.score);
 
-    return res.json({ result, ats: { ...ats, guidance } });
+    // Persist user + resume to database (non-blocking — errors don't fail the request)
+    let userId = null;
+    let resumeId = null;
+    try {
+      userId = createUser({ name: userData.name, email: userData.email, phone: userData.phone });
+      resumeId = createResume({
+        userId,
+        resumeData: userData,
+        generatedContent: result,
+        atsScore: Math.round(ats.score)
+      });
+      persistAiUsage({
+        userId,
+        resumeId,
+        usageLogs
+      });
+    } catch (dbErr) {
+      console.error("[generateResume] DB save failed:", dbErr.message);
+    }
+
+    return res.json({ result, ats: { ...ats, guidance }, userId, resumeId });
   } catch (err) {
     console.error("[generateResume]", err.message);
-    return res.status(500).json({ error: "Resume generation failed. Please try again." });
+    const msg = String(err.message || "").toLowerCase();
+    if (msg.includes("rate") || msg.includes("429")) {
+      return res.status(429).json({ error: "Our AI service is rate-limited right now. Please wait a few minutes and try again." });
+    }
+    if (msg.includes("timeout") || msg.includes("etimedout") || msg.includes("econnaborted")) {
+      return res.status(503).json({ error: "AI generation timed out — our servers are busy. Please try again in a moment." });
+    }
+    if (msg.includes("parse") || msg.includes("json") || msg.includes("structured")) {
+      return res.status(500).json({ error: "The AI returned an unexpected response. Please try generating again." });
+    }
+    if (msg.includes("configured") || msg.includes("api_key")) {
+      return res.status(503).json({ error: "AI service is temporarily unavailable. Please try again shortly." });
+    }
+    return res.status(500).json({ error: "Resume generation failed. Please try again in a moment." });
   }
+};
+
+export const generationChallenge = (_req, res) => {
+  res.json(createChallenge());
 };
 
 export const uploadResume = async (req, res) => {
@@ -113,28 +182,47 @@ export const suggestKeywords = async (req, res) => {
 
 export const improveResume = async (req, res) => {
   try {
-    const { resumeData, userData, jobDescription, missingKeywords, currentScore } = req.body;
+    const { resumeData, userData, jobDescription, missingKeywords, currentScore, failedChecks } = req.body;
     if (!resumeData || !jobDescription) {
       return res.status(400).json({ error: "Resume data and job description are required." });
     }
-    const firstPass = await improveAIResume({
+
+    const startScore = currentScore || 0;
+
+    const firstPassResponse = await improveAIResume({
       resumeData,
       userData: userData || {},
       jobDescription,
       missingKeywords: missingKeywords || [],
-      currentScore: currentScore || 0
+      currentScore: startScore,
+      failedChecks: failedChecks || []
     });
     const { result: refined, ats } = await refineTowardTarget({
-      result: firstPass,
+      result: firstPassResponse.resume,
       userData: userData || {},
       jobDescription,
       targetScore: 95,
-      maxPasses: 2
+      maxPasses: 3
     });
 
-    return res.json({ result: refined, ats: { ...ats, guidance: atsGuidance(ats.score) } });
+    const delta = Math.round(ats.score) - startScore;
+    let guidance = atsGuidance(ats.score);
+    if (delta > 0 && ats.score < 95) {
+      guidance = `Score improved by +${delta} pts (${startScore} → ${Math.round(ats.score)}). ${guidance}`;
+    } else if (delta <= 0 && ats.score < 95) {
+      guidance = `Score held at ${Math.round(ats.score)}. The remaining gap may require adding more specific keywords or projects from the JD to your profile.`;
+    }
+
+    return res.json({ result: refined, ats: { ...ats, guidance } });
   } catch (err) {
     console.error("[improveResume]", err.message);
-    return res.status(500).json({ error: "Resume improvement failed. Please try again." });
+    const msg = String(err.message || "").toLowerCase();
+    if (msg.includes("rate") || msg.includes("429")) {
+      return res.status(429).json({ error: "AI service is rate-limited. Please wait a few minutes and try again." });
+    }
+    if (msg.includes("timeout") || msg.includes("etimedout")) {
+      return res.status(503).json({ error: "AI improvement timed out — servers are busy. Please try again in a moment." });
+    }
+    return res.status(500).json({ error: "Resume improvement failed. Please try again in a moment." });
   }
 };

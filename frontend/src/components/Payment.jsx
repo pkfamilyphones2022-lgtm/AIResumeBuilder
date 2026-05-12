@@ -1,23 +1,44 @@
 import axios from "axios";
+import { parsePaymentOrderError, parsePaymentVerifyError } from "../utils/apiError.js";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const STORAGE_KEY = "raa_access";
 
-export const savePaymentToken = (accessToken, orderId, paymentId) => {
+export const savePaymentToken = ({ accessToken, orderId, paymentId, resumeId, paymentScope }) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ accessToken, orderId, paymentId }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ accessToken, orderId, paymentId, resumeId, paymentScope: paymentScope || resumeId, used: false })
+    );
   } catch {}
 };
 
-export const clearPaymentToken = () => {
+export const clearPaymentToken = (resumeId) => {
   try { localStorage.removeItem(STORAGE_KEY); } catch {}
 };
 
-export const restorePaymentToken = async () => {
+export const getPaymentTokenPayload = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+export const restorePaymentToken = async (resumeId) => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
     const payload = JSON.parse(raw);
+    if (payload.used) {
+      clearPaymentToken();
+      return false;
+    }
+    if (String(payload.paymentScope || payload.resumeId || "") !== String(resumeId || "")) {
+      clearPaymentToken();
+      return false;
+    }
     const { data } = await axios.post(`${API}/payment/check`, payload);
     if (!data.valid) { clearPaymentToken(); return false; }
     return true;
@@ -26,14 +47,21 @@ export const restorePaymentToken = async () => {
   }
 };
 
-export const payNow = async (onSuccess, onError) => {
+export const payNow = async (context, onSuccess, onError) => {
   if (!window.Razorpay) {
-    onError?.("Razorpay checkout is not loaded.");
+    onError?.("Payment system is still loading. Please refresh the page and try again.");
     return;
   }
 
+  if (!navigator.onLine) {
+    onError?.("No internet connection — payment cannot be started. Please check your network.");
+    return;
+  }
+
+  const { userId, resumeId, paymentScope, userName, userEmail, resumeTitle, resumeData } = context || {};
+
   try {
-    const orderResponse = await axios.post(`${API}/payment/order`);
+    const orderResponse = await axios.post(`${API}/payment/order`, { userId, resumeId });
     const { keyId, orderId, amount, currency } = orderResponse.data;
 
     const options = {
@@ -42,27 +70,60 @@ export const payNow = async (onSuccess, onError) => {
       currency,
       order_id: orderId,
       name: "ResumeAlignAI",
-      description: "Professional resume PDF download for Rs.69",
+      description: "Professional resume PDF download — Rs.69",
+      prefill: {
+        name: userName || "",
+        email: userEmail || ""
+      },
       handler: async (paymentResponse) => {
         try {
-          const { data } = await axios.post(`${API}/payment/verify`, paymentResponse);
-          savePaymentToken(data.accessToken, data.orderId, data.paymentId);
+          const { data } = await axios.post(`${API}/payment/verify`, {
+            ...paymentResponse,
+            userId,
+            resumeId,
+            userName,
+            userEmail,
+            resumeTitle,
+            resumeData
+          });
+          savePaymentToken({
+            accessToken: data.accessToken,
+            orderId: data.orderId,
+            paymentId: data.paymentId,
+            resumeId: data.resumeId || resumeId,
+            paymentScope: paymentScope || resumeId
+          });
+          if (data.emailStatus && data.emailStatus !== "sent") {
+            console.warn("Payment verified, but confirmation email was not sent:", data.emailStatus);
+          }
           onSuccess();
         } catch (err) {
-          onError?.(err.response?.data?.error || "Payment verification failed.");
+          onError?.(parsePaymentVerifyError(err));
         }
       },
-      theme: {
-        color: "#0f766e"
-      }
+      modal: {
+        ondismiss: () => {
+          // User closed the Razorpay modal — no error, just a dismissal
+        }
+      },
+      theme: { color: "#0f766e" }
     };
 
     const checkout = new window.Razorpay(options);
-    checkout.on("payment.failed", () => {
-      onError?.("Payment failed. Please try again.");
+    checkout.on("payment.failed", (response) => {
+      const reason = response?.error?.description || response?.error?.reason || "";
+      if (reason.toLowerCase().includes("insufficient") || reason.toLowerCase().includes("balance")) {
+        onError?.("Payment failed — insufficient funds. Please try a different payment method.");
+      } else if (reason.toLowerCase().includes("expired")) {
+        onError?.("Your card has expired. Please use a different card or payment method.");
+      } else if (reason.toLowerCase().includes("declined")) {
+        onError?.("Payment was declined by your bank. Please try a different payment method.");
+      } else {
+        onError?.("Payment was not completed. Please try again or use a different payment method.");
+      }
     });
     checkout.open();
   } catch (err) {
-    onError?.(err.response?.data?.error || "Unable to create Razorpay order.");
+    onError?.(parsePaymentOrderError(err));
   }
 };

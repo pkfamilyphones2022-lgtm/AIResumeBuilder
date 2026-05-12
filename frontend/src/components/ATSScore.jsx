@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { Activity, CheckCircle2, PlusCircle, Sparkles, Target, Zap } from "lucide-react";
+import { parseAtsError } from "../utils/apiError.js";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -98,7 +99,7 @@ export default function ATSScore({ resume, job, jobTitle, initialData, result, o
           : "Boost your score by incorporating the suggested keywords below."
       );
     } catch (err) {
-      setError(err.response?.data?.error || "ATS score check failed.");
+      setError(parseAtsError(err));
     } finally {
       setChecking(false);
     }
@@ -159,8 +160,11 @@ export default function ATSScore({ resume, job, jobTitle, initialData, result, o
   const boost = async () => {
     if (!onImprove) return;
     setBoosting(true);
+    const failedChecks = (details?.checkedItems || [])
+      .filter((item) => !item.passed)
+      .map((item) => ({ label: item.label, detail: item.detail, importance: item.importance }));
     try {
-      await onImprove(missing, score);
+      await onImprove(missing, score, failedChecks);
     } finally {
       setBoosting(false);
     }
@@ -187,7 +191,13 @@ export default function ATSScore({ resume, job, jobTitle, initialData, result, o
         </button>
       </div>
 
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <div className="error-banner" style={{ marginBottom: 8 }}>
+          <span>⚠</span>
+          <span>{error}</span>
+          <button className="error-banner-close" onClick={() => setError("")} aria-label="Dismiss">✕</button>
+        </div>
+      )}
 
       {score !== null && (
         <motion.div
@@ -250,17 +260,31 @@ export default function ATSScore({ resume, job, jobTitle, initialData, result, o
 
           {details?.checkedItems?.length > 0 && (
             <div className="ats-checked-block">
-              <h3>What ATS Checked</h3>
+              <h3>ATS Compliance Checklist</h3>
               <div className="ats-check-list">
-                {details.checkedItems.map((item) => (
-                  <div key={item.label} className={`ats-check-item ${item.passed ? "is-pass" : "is-gap"}`}>
-                    <CheckCircle2 size={15} />
-                    <div>
-                      <strong>{item.label}</strong>
-                      <p>{item.detail}</p>
+                {[...details.checkedItems]
+                  .sort((a, b) => {
+                    // Failed high → Failed medium → Passed high → Passed medium
+                    const rank = (item) =>
+                      !item.passed && item.importance === "high" ? 0 :
+                      !item.passed && item.importance === "medium" ? 1 :
+                      item.passed && item.importance === "high" ? 2 : 3;
+                    return rank(a) - rank(b);
+                  })
+                  .map((item) => (
+                    <div key={item.label} className={`ats-check-item ${item.passed ? "is-pass" : "is-gap"}`}>
+                      <CheckCircle2 size={15} />
+                      <div className="ats-check-body">
+                        <div className="ats-check-title">
+                          <strong>{item.label}</strong>
+                          <span className={`ats-importance-badge importance-${item.importance || "high"}`}>
+                            {item.importance === "medium" ? "Medium" : "High"}
+                          </span>
+                        </div>
+                        <p>{item.detail}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           )}

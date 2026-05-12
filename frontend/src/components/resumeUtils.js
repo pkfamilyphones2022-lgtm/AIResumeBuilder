@@ -1,4 +1,5 @@
 export const templateCatalog = [
+  { id: "aurora-luxe",      name: "Aurora Luxe",      accent: "#2563eb", layout: "premium-card", surface: "#fbfdff", sidebar: "#e0f2fe" },
   { id: "executive-slate",  name: "Executive Slate",  accent: "#16324f", layout: "sidebar-left",  surface: "#f8fafc", sidebar: "#dce8f5" },
   { id: "teal-edge",        name: "Teal Edge",        accent: "#0f766e", layout: "sidebar-right", surface: "#f0fdf9", sidebar: "#ccfbef" },
   { id: "graphite-pro",     name: "Graphite Pro",     accent: "#334155", layout: "single-col",    surface: "#f8fafc", sidebar: "#f1f5f9" },
@@ -38,6 +39,7 @@ const normalizeList = (items) =>
 const normalizeBullets = (items) => normalizeList(items).map((item) => item.replace(/^[-*]\s*/, "").trim());
 
 export const normalizeResumeData = (resume = {}) => ({
+  candidateType: resume.candidateType || resume.type || "",
   fullName: resume.fullName || "",
   title: resume.title || "",
   contact: {
@@ -70,6 +72,7 @@ export const normalizeResumeData = (resume = {}) => ({
   certifications: normalizeBullets(resume.certifications),
   coursework: normalizeBullets(resume.coursework),
   achievements: normalizeBullets(resume.achievements),
+  languages: normalizeBullets(resume.languages),
   keywords: normalizeBullets(resume.keywords),
   atsStrategy: {
     targetPhrases: normalizeBullets(resume.atsStrategy?.targetPhrases),
@@ -96,23 +99,31 @@ export const resumeToPlainText = (resume = {}) => {
   const data = normalizeResumeData(resume);
   const lines = [];
   const contactLine = [
-    data.contact.email,
     data.contact.phone,
-    data.contact.location,
+    data.contact.email,
     data.contact.linkedin,
+    data.contact.location,
     data.contact.portfolio
   ]
     .filter(Boolean)
     .join(" | ");
+  const isFresher = String(data.candidateType || "").toLowerCase() === "fresher";
+  const labels = {
+    summary: isFresher ? "Career Objective" : "Professional Summary",
+    skills: isFresher ? "Technical Skills" : "Key Skills",
+    experience: isFresher ? "Internship / Training" : "Work Experience",
+    projects: isFresher ? "Academic Projects" : "Projects"
+  };
 
   if (data.fullName) lines.push(data.fullName);
-  if (data.title) lines.push(data.title);
   if (contactLine) lines.push(contactLine);
-  if (data.summary) lines.push(`Summary\n${data.summary}`);
-  if (data.skills.length) lines.push(`Skills\n${data.skills.join(", ")}`);
+  if (data.title) lines.push(data.title);
+  if (data.summary) lines.push(`${labels.summary}\n${data.summary}`);
+  if (data.skills.length) lines.push(`${labels.skills}\n${data.skills.join(", ")}`);
 
-  if (data.experience.length) {
-    lines.push("Experience");
+  const addExperience = () => {
+    if (!data.experience.length) return;
+    lines.push(labels.experience);
     data.experience.forEach((item) => {
       lines.push([item.role, item.company].filter(Boolean).join(" | "));
       if (item.duration || item.location) {
@@ -120,14 +131,23 @@ export const resumeToPlainText = (resume = {}) => {
       }
       item.bullets.forEach((bullet) => lines.push(`- ${bullet}`));
     });
-  }
+  };
 
-  if (data.projects.length) {
-    lines.push("Projects");
+  const addProjects = () => {
+    if (!data.projects.length) return;
+    lines.push(labels.projects);
     data.projects.forEach((item) => {
       lines.push([item.name, item.subtitle].filter(Boolean).join(" | "));
       item.bullets.forEach((bullet) => lines.push(`- ${bullet}`));
     });
+  };
+
+  if (isFresher) {
+    addProjects();
+    addExperience();
+  } else {
+    addExperience();
+    addProjects();
   }
 
   if (data.education.length) {
@@ -144,21 +164,15 @@ export const resumeToPlainText = (resume = {}) => {
     lines.push(`Certifications\n${data.certifications.join(", ")}`);
   }
 
-  if (data.coursework.length) {
-    lines.push(`Relevant Coursework\n${data.coursework.join(", ")}`);
-  }
-
   if (data.achievements.length) {
     lines.push(`Achievements\n${data.achievements.map((item) => `- ${item}`).join("\n")}`);
   }
 
-  if (data.keywords.length) {
-    lines.push(`Keywords\n${data.keywords.join(", ")}`);
+  if (!isFresher && data.languages.length) {
+    lines.push(`Languages\n${data.languages.join(", ")}`);
   }
 
-  if (data.atsStrategy.targetPhrases.length) {
-    lines.push(`Target Phrases\n${data.atsStrategy.targetPhrases.join(", ")}`);
-  }
+  // keywords/atsStrategy metadata excluded — not rendered, would inflate ATS score
 
   return lines.filter(Boolean).join("\n\n");
 };

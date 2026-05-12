@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import {
   generateResume,
+  generationChallenge,
   uploadResume,
   atsScore,
   suggestKeywords,
@@ -10,8 +11,11 @@ import {
 import {
   createPaymentOrder,
   verifyPayment,
-  checkPaymentToken
+  checkPaymentToken,
+  recordResumeDownload,
+  emailResumeAttachments
 } from "../controllers/paymentController.js";
+import { adminOverview, adminSendResume, requireAdmin } from "../controllers/adminController.js";
 
 const router = express.Router();
 
@@ -28,6 +32,7 @@ const upload = multer({
 });
 
 router.post("/generate", generateResume);
+router.get("/challenge", generationChallenge);
 router.post("/upload", upload.single("resume"), uploadResume);
 router.post("/ats", atsScore);
 router.post("/suggest", suggestKeywords);
@@ -35,5 +40,9 @@ router.post("/improve", improveResume);
 router.post("/payment/order", createPaymentOrder);
 router.post("/payment/verify", verifyPayment);
 router.post("/payment/check", checkPaymentToken);
+router.post("/payment/download", recordResumeDownload);
+router.post("/payment/email-attachments", emailResumeAttachments);
+router.get("/admin/overview", requireAdmin, adminOverview);
+router.post("/admin/resumes/:resumeId/send", requireAdmin, adminSendResume);
 
 export default router;

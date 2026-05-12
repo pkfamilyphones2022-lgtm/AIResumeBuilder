@@ -1,142 +1,62 @@
 # ResumeAlignAI
 
-AI-powered resume builder that helps job seekers create targeted, ATS-aware resumes from structured profile details, existing PDF resumes, and real job descriptions. The app includes dedicated fresher and experienced workflows, AI resume generation, ATS scoring, template previews, paid PDF/DOCX export, and Razorpay payment verification.
+ResumeAlignAI is an AI resume builder for fresher and experienced candidates. It creates ATS-aware resumes from structured form data, existing PDF resumes, and job descriptions, then supports protected preview, editing, scoring, payment unlock, one-time download, email delivery, and an admin dashboard for business tracking.
 
-Last updated: May 7, 2026
+Last updated: May 11, 2026
 
-## Product Features
+## Features
 
-### Landing Page
+- Separate resume flows for experienced candidates and freshers.
+- AI resume generation with DeepSeek as the primary provider, plus Groq and Anthropic fallback support.
+- ATS scoring, keyword gaps, quick wins, AI keyword suggestions, and resume improvement.
+- PDF resume upload and parsing with a 5 MB upload limit.
+- 28 resume templates, including the premium `Aurora Luxe` template.
+- Sample resumes for QA Manual, HR, Accountant, Customer/Core Service, and Test Automation Engineer roles for both fresher and experienced sections.
+- Market-style resume sections enforced by candidate type.
+- Resume preview protection with disabled text selection, copy, right click, drag, and print shortcut.
+- Diagonal preview watermark and footer watermark. Exported PDF/DOCX files stay clean.
+- Centered payment/download/email modals using React portals so users do not miss the next action after payment.
+- Razorpay payment unlock at Rs.69.
+- One successful payment token supports one tracked download. A customer can create a new payment again with the same email.
+- PDF and DOCX export.
+- Optional email delivery of both PDF and DOCX resume files after payment.
+- SMTP payment confirmation email.
+- SQLite storage for users, resumes, payments, emails, downloads, and AI token usage.
+- Admin dashboard with day-wise revenue, payment status, resumes created, downloads, email status, AI cost, gross profit, model usage, and support resend actions.
+- Server-signed generation challenge and hidden honeypot field to reduce automated abuse before AI tokens are spent.
 
-- Animated ResumeAlignAI landing page with benefits, ATS awareness, customer proof, pricing, contact details, and builder entry points.
-- Separate calls to action for **Fresher Resume** and **Experienced Resume**.
-- Launch offer messaging for resume export unlock at `Rs.69` instead of `Rs.299`.
-- Communicates how the app moves users from details, to AI generation, to ATS review, to recruiter-ready export.
+## Resume Structures
 
-### Builder Workspaces
+Experienced candidates:
 
-- `/builder` for experienced professionals.
-- `/fresher-builder` for students, interns, and entry-level candidates.
-- Mode-specific copy, validation, section priority, and AI payload rules.
-- Focused builder page with upload, form intake, generation, ATS score, preview, editing, payment, and export in one workflow.
+```text
+Name
+Phone | Email | LinkedIn | Location
 
-### Candidate Intake
+Professional Summary
+Key Skills
+Work Experience
+Projects
+Education
+Certifications
+Achievements
+Languages
+```
 
-- Captures name, email, phone, location, LinkedIn, portfolio/GitHub, target title, target company, industry, seniority, and job description.
-- Experienced flow supports multiple roles with job title, company, duration, location/mode, employment type, responsibilities, and achievements.
-- Fresher flow supports career objective, coursework/core concepts, achievements, activities, internships, training, and workshops.
-- Shared sections support projects, education, skills, and certifications.
-- Frontend validation requires core contact details, target role, job description, and at least one content source.
+Freshers:
 
-### PDF Resume Upload And Parsing
+```text
+Name
+Phone | Email | LinkedIn | Location
 
-- Users can upload an existing resume as a PDF.
-- Backend extracts resume text with `pdf-parse`.
-- Parsed profile details can prefill empty form fields.
-- Upload limit is `5 MB`.
-- Only PDF files are accepted.
-
-### AI Resume Generation
-
-- Backend generates structured resume data from form inputs, uploaded resume text, and the target job description.
-- Supports fresher and experienced resume logic through `resumeRulesMode`.
-- AI output includes summary, skills, experience, projects, education, certifications, coursework, achievements, ATS strategy, and verification data.
-- Generation is designed to improve resume content, not only reformat it.
-- The AI service loads `frontend/resume-builder-rules-readme.md` at runtime and injects the product rulebook into generation and improvement prompts.
-- Generation prompts apply career-stage rules automatically: freshers get objective/projects/education priority, while experienced candidates get summary/experience/impact priority.
-- Uploaded resume text is treated as raw facts only, so weak wording or poor layout is not copied directly.
-- AI responses are parsed as strict JSON, with support for fenced JSON and embedded JSON recovery.
-- Resume output is normalized before returning to the frontend so arrays, bullets, contact fields, ATS strategy, and verification data stay consistent.
-
-### Automatic ATS Refinement
-
-- After generation, the backend runs ATS scoring and can refine the resume toward a `95%` target.
-- Refinement uses missing keywords, job title context, and the job description.
-- The app returns score guidance based on the resulting ATS match.
-- Refinement can run multiple passes and stops if the new result does not improve the ATS score.
-- Improvement prompts preserve the same resume schema while rewriting weak lines, adding truthful missing keywords, and maintaining fresher vs experienced section order.
-- Resume verification metadata includes status, checked line count, notes, and line-level checks for clarity, truthfulness, grammar, and ATS fit.
-
-### Live ATS Match Score
-
-- ATS panel shows a score out of `100` with a visual score ring.
-- Shows matched keyword count, score gap to `95%`, matched phrases, required terms, and checked items.
-- Score breakdown includes keyword coverage, important term coverage, phrase coverage, section coverage, and polish score.
-- Users can refresh ATS scoring after edits.
-- ATS scoring is weighted across keyword coverage, important term coverage, exact phrase coverage, standard section coverage, and polish signals.
-- ATS checks include job title/profile alignment, required keyword coverage, exact JD phrase coverage, required skills, mapped responsibilities, ATS-readable sections, impact bullets/metrics, and contact parse readiness.
-- Role/profile phrase detection supports common tracks such as frontend, backend, full stack, data/business analyst, project/program manager, sales, marketing, and HR.
-- Required terms include source labels such as job title/profile, required skills, responsibilities, profile keywords, and job description phrases.
-
-### ATS Quick-Win Actions
-
-- Missing role/JD terms are surfaced as quick wins.
-- Users can add a missing term directly to skills.
-- Users can request an AI sentence suggestion for a keyword.
-- Suggested text can be added to summary, skills, or the first experience section.
-- One-click **Enhance more to 95+ ATS** improves the generated resume through the backend.
-- AI keyword suggestions are limited to the top missing terms to keep edits focused.
-- Suggestions follow keyword safety rules and avoid inventing tools, credentials, companies, or metrics.
-- Suggestions are section-aware: summary gets complete professional sentences, experience gets action-oriented bullets, and skills gets short skill phrases.
-
-### AI Provider Reliability
-
-- The backend can call Groq's OpenAI-compatible chat completions API using `GROQ_API_KEY`.
-- Default Groq model is `llama-3.3-70b-versatile`, configurable through `GROQ_MODEL`.
-- If Groq returns rate-limit or temporary gateway/service errors, the service falls back to Anthropic automatically.
-- Anthropic fallback uses `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL`.
-- Both providers are expected to return JSON objects for reliable resume rendering.
-
-### Resume Preview And Templates
-
-- Resume preview renders structured sections for contact, summary, skills, experience, projects, education, certifications, coursework, and achievements.
-- Preview renders the resume frame without 3D tilt or scale transforms so text stays sharp while users review it.
-- Resume preview defaults to an A4 sheet size (`794px x 1123px`) for more predictable export formatting.
-- A hidden export sheet is used for cleaner PDF capture.
-- PDF download captures the same selected template and A4 layout shown in preview.
-- Template catalog includes 26 named templates:
-  `Executive Slate`, `Teal Edge`, `Graphite Pro`, `Amber Frame`, `Indigo Column`, `Forest Grid`, `Burgundy Line`, `Ink Serif`, `Ocean Ribbon`, `Minimal Mint`, `Charcoal Band`, `Copper Block`, `Violet Brief`, `Pine Profile`, `Navy Classic`, `Mono Contrast`, `Recruiter Focus`, `Startup Clean`, `Product Leader`, `Data Sharp`, `Consultant White`, `Tech Matrix`, `Global CV`, `Creative Line`, `Academic Classic`, and `Operations Pro`.
-- Templates use 7 layout families: sidebar-left, sidebar-right, single-column, banner, top-bar, minimal, and executive.
-- Each template has its own accent color, surface color, and layout behavior.
-
-### Post-Generation Editing
-
-- Users can edit full name, headline, summary, skills, certifications, coursework, achievements, contact details, experience, projects, and education.
-- Users can add or remove generated experience, project, and education entries.
-- Edits update the preview immediately and can be re-scored through ATS refresh.
-
-### Pre-Download Verification
-
-- Before download, users see a verification modal.
-- Checklist asks users to confirm name/contact accuracy, job titles, companies, dates, credentials, tools, project claims, and education details.
-- ATS warnings remind users about keyword matching, standard headings, ATS-safe layouts, abbreviations, and score expectations.
-
-### Payment Unlock
-
-- Download is locked until payment.
-- Backend creates Razorpay orders for `Rs.69` in INR.
-- Backend verifies Razorpay signatures before unlocking download.
-- Payment errors are surfaced in the UI.
-
-### PDF And DOCX Export
-
-- Paid users can choose PDF or DOCX download.
-- PDF export uses `html2canvas` and `jsPDF`.
-- DOCX export uses the `docx` package with ATS-readable sections and bullet lists.
-- After download, the app opens the user's email client with a self-send reminder.
-
-## Roadmap
-
-The landing page currently communicates these upcoming or planned features:
-
-- Multi-template resume themes for tech, business, and creative roles.
-- Cover letter generation and concise outreach notes.
-- Interview preparation suggestions from the generated resume.
-- Saved resumes per job with version history.
-- Shareable read-only recruiter review links.
-- Server-side PDF export for more consistent rendering.
-- One-click ATS improvements applied into selected resume sections.
-- Account login, payment history, and download history.
+Career Objective
+Technical Skills
+Academic Projects
+Internship / Training
+Education
+Certifications
+Achievements
+```
 
 ## Tech Stack
 
@@ -144,62 +64,91 @@ The landing page currently communicates these upcoming or planned features:
 | --- | --- |
 | Frontend | React 18, Vite, Framer Motion, Lucide React, Axios |
 | Export | html2canvas, jsPDF, docx |
-| Backend | Node.js, Express, Multer, pdf-parse |
-| AI | Groq API with Anthropic SDK fallback |
-| Payment | Razorpay order creation and signature verification |
-| Styling | CSS |
+| Backend | Node.js, Express, Helmet, CORS, Express Rate Limit, Multer |
+| Database | SQLite with better-sqlite3 |
+| AI | DeepSeek, Groq, Anthropic |
+| Payments | Razorpay |
+| Email | Nodemailer SMTP |
 
 ## Project Structure
 
 ```text
 AIResumeBuilder/
 |-- backend/
-|   |-- controllers/       # Resume and payment logic
-|   |-- routes/            # API endpoints
-|   |-- services/          # AI integration
-|   |-- utils/             # ATS scoring, parsing, resume text helpers
-|   |-- server.js          # Express server
+|   |-- controllers/       # Resume, ATS, payment, email, and admin logic
+|   |-- db/                # SQLite setup and query helpers
+|   |-- routes/            # API routes
+|   |-- services/          # AI and email services
+|   |-- utils/             # ATS, challenge, resume parsing, text conversion
+|   |-- server.js
 |   `-- package.json
 |-- frontend/
 |   |-- src/
-|   |   |-- components/    # React UI components
-|   |   |-- App.jsx        # Landing page and builder routing
-|   |   |-- main.jsx       # React entry point
-|   |   `-- styles.css     # Global styles
-|   |-- resume-builder-rules-readme.md
+|   |   |-- components/    # App UI, builder, preview, payment, samples, admin
+|   |   |-- utils/         # Frontend helpers
+|   |   |-- App.jsx
+|   |   |-- main.jsx
+|   |   `-- styles.css
+|   |-- .env.example
+|   |-- .env.production
 |   |-- vite.config.js
 |   `-- package.json
 `-- README.md
 ```
 
-## Setup
+## Local Setup
 
 ### Prerequisites
 
-- Node.js `16+`
-- npm
-- Anthropic API key
-- Razorpay account credentials
+- Node.js 18 or newer.
+- npm.
+- Razorpay test or live account credentials.
+- At least one AI provider key. DeepSeek is recommended as the primary provider.
+- SMTP credentials for production email. For Gmail, use an App Password.
 
 ### Backend
 
-Create `backend/.env`:
+Create `backend/.env` from `backend/.env.example`.
+
+Local development example:
 
 ```env
-# Primary AI provider
+DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_MODEL=deepseek-chat
+
 GROQ_API_KEY=your_groq_api_key
 GROQ_MODEL=llama-3.3-70b-versatile
 
-# Fallback AI provider
 ANTHROPIC_API_KEY=your_anthropic_api_key
 ANTHROPIC_MODEL=claude-haiku-4-5
 
+AI_COST_USD_TO_INR=94.3
+AI_COST_DEEPSEEK_CACHE_HIT_PAISE_PER_1M=264
+AI_COST_DEEPSEEK_CACHE_MISS_PAISE_PER_1M=1320
+AI_COST_DEEPSEEK_INPUT_PAISE_PER_1M=1320
+AI_COST_DEEPSEEK_OUTPUT_PAISE_PER_1M=2640
+AI_COST_GROQ_INPUT_PAISE_PER_1M=5564
+AI_COST_GROQ_OUTPUT_PAISE_PER_1M=7450
+AI_COST_ANTHROPIC_INPUT_PAISE_PER_1M=9430
+AI_COST_ANTHROPIC_OUTPUT_PAISE_PER_1M=47150
+
 PORT=5000
+NODE_ENV=development
 CLIENT_ORIGIN=http://localhost:5173
 APP_URL=http://localhost:5173
 
 RAZORPAY_KEY_ID=your_razorpay_key_id
 RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+
+ACCESS_TOKEN_SECRET=generate-a-strong-random-secret
+ADMIN_ACCESS_TOKEN=generate-a-different-strong-admin-token
+DATABASE_PATH=./database.sqlite
+
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your_gmail@gmail.com
+EMAIL_PASS=your_gmail_app_password
+EMAIL_FROM=ResumeAlignAI <your_gmail@gmail.com>
 ```
 
 Install and run:
@@ -210,11 +159,21 @@ npm install
 npm run dev
 ```
 
-The backend runs at `http://localhost:5000`.
+Backend health check:
+
+```bash
+curl http://localhost:5000/health
+```
+
+Expected response:
+
+```json
+{"ok":true}
+```
 
 ### Frontend
 
-Create `frontend/.env`:
+Create `frontend/.env` from `frontend/.env.example`.
 
 ```env
 VITE_API_URL=http://localhost:5000/api
@@ -228,48 +187,299 @@ npm install
 npm run dev
 ```
 
-The frontend runs at `http://localhost:5173`.
+Frontend runs at `http://localhost:5173`.
+
+## Secret Generation
+
+Generate `ACCESS_TOKEN_SECRET` and `ADMIN_ACCESS_TOKEN` separately. Do not reuse the same value.
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Run the command twice:
+
+- Save the first value as `ACCESS_TOKEN_SECRET` in `backend/.env`.
+- Save the second value as `ADMIN_ACCESS_TOKEN` in `backend/.env`.
+
+`ACCESS_TOKEN_SECRET` signs paid download access tokens. `ADMIN_ACCESS_TOKEN` protects `/admin` and `/api/admin/*`.
+
+Never commit `backend/.env`, `frontend/.env`, real API keys, Razorpay secrets, email passwords, or generated tokens.
 
 ## API Endpoints
 
-### Resume
+### Resume And ATS
 
+- `GET /api/challenge` - Create a signed security challenge required before resume generation.
 - `POST /api/generate` - Generate and refine a resume.
 - `POST /api/upload` - Upload and parse a PDF resume.
-- `POST /api/ats` - Calculate ATS match score.
-- `POST /api/suggest` - Generate keyword placement suggestions.
+- `POST /api/ats` - Calculate ATS score.
+- `POST /api/suggest` - Suggest keyword placement.
 - `POST /api/improve` - Improve resume toward the ATS target.
 
-### Payment
+### Payment, Download, And Email
 
 - `POST /api/payment/order` - Create a Razorpay order.
-- `POST /api/payment/verify` - Verify Razorpay payment signature.
+- `POST /api/payment/verify` - Verify Razorpay signature and issue a paid access token.
+- `POST /api/payment/check` - Validate an existing download access token.
+- `POST /api/payment/download` - Record a verified resume download and consume the token on the frontend.
+- `POST /api/payment/email-attachments` - Email generated PDF and DOCX attachments after payment.
 
-## Key Frontend Components
+### Admin
 
-- `App.jsx` - Landing page, lightweight routing, and builder page shells.
-- `Form.jsx` - Fresher/experienced intake forms, PDF upload, generation calls, and ATS improvement calls.
-- `ATSScore.jsx` - ATS score ring, keyword gaps, checked items, quick-win actions, AI suggestions, and score refresh.
-- `Preview.jsx` - Template preview, post-generation editor, verification modal, PDF/DOCX download, and email share trigger.
-- `Payment.jsx` - Razorpay checkout and payment verification flow.
-- `Loader.jsx` - Loading state UI.
-- `resumeUtils.js` - Resume normalization, plain-text conversion, and template catalog.
+- `GET /api/admin/overview` - Get dashboard summary, day-wise stats, recent customer sessions, AI usage, and pricing.
+- `POST /api/admin/resumes/:resumeId/send` - Send the stored generated resume to a paid customer from support/admin flow.
 
-## Key Backend Modules
+Admin routes require this header:
 
-- `server.js` - Express server setup.
-- `routes/resumeRoutes.js` - Resume, ATS, suggestion, improvement, upload, and payment routes.
-- `controllers/resumeController.js` - Resume generation, upload parsing, ATS scoring, keyword suggestions, and AI improvement.
-- `controllers/paymentController.js` - Razorpay order creation and signature verification.
-- `services/aiService.js` - Anthropic-powered resume generation and refinement.
-- `utils/ats.js` - ATS score calculation and keyword analysis.
-- `utils/resumeParser.js` - Structured data extraction from parsed resume text.
-- `utils/resumeText.js` - Structured resume to plain-text conversion for ATS analysis.
+```text
+x-admin-token: your_ADMIN_ACCESS_TOKEN
+```
 
-## Notes
+The admin API must reject missing or wrong tokens with `401`.
 
-- The detailed product rulebook remains in `frontend/resume-builder-rules-readme.md`.
-- Generated resume content must remain truthful and should not invent jobs, degrees, credentials, metrics, tools, or achievements.
-- The default ATS target in the current product is `95%`.
-#   A I R e s u m e B u i l d e r  
- 
+## Database
+
+The backend uses SQLite through `better-sqlite3`. Tables are created automatically on backend startup.
+
+Tables:
+
+- `users`
+- `resumes`
+- `payments`
+- `emails`
+- `downloads`
+- `ai_usage`
+
+For production, `DATABASE_PATH` must point to persistent storage. Do not deploy SQLite on an ephemeral filesystem unless losing customer, payment, download, and admin history is acceptable.
+
+## Admin Dashboard
+
+Open:
+
+```text
+http://localhost:5173/admin
+```
+
+In production, open:
+
+```text
+https://your-frontend-domain.com/admin
+```
+
+Enter `ADMIN_ACCESS_TOKEN`.
+
+The dashboard shows:
+
+- Total resumes created.
+- Successful, pending, and failed payments.
+- Day-wise payment status.
+- Revenue from successful payments.
+- Estimated AI cost.
+- Estimated gross profit.
+- Total downloads.
+- Paid sessions where no download was recorded.
+- Email sent and failed counts.
+- Recent customer sessions.
+- Payment status per session.
+- Download and email status per session.
+- Support action to resend a paid customer's generated resume.
+- Token usage by provider/model.
+- AI pricing rates currently used by the server.
+
+AI cost is calculated from provider token usage when available. If a provider does not return token usage, the backend uses a rough local estimate. Older resumes created before AI usage logging was added will show zero AI cost.
+
+## AI Cost Configuration
+
+Costs are stored as paise per 1 million tokens so the dashboard can show estimated rupee cost and profit.
+
+Current configured defaults:
+
+| Provider | Input / Cache Miss | Output | Cache Hit |
+| --- | ---: | ---: | ---: |
+| DeepSeek | 1320 paise / 1M | 2640 paise / 1M | 264 paise / 1M |
+| Groq | 5564 paise / 1M | 7450 paise / 1M | n/a |
+| Anthropic | 9430 paise / 1M | 47150 paise / 1M | n/a |
+
+Keep these values updated when provider pricing or USD to INR changes:
+
+```env
+AI_COST_USD_TO_INR=94.3
+AI_COST_DEEPSEEK_CACHE_HIT_PAISE_PER_1M=264
+AI_COST_DEEPSEEK_CACHE_MISS_PAISE_PER_1M=1320
+AI_COST_DEEPSEEK_INPUT_PAISE_PER_1M=1320
+AI_COST_DEEPSEEK_OUTPUT_PAISE_PER_1M=2640
+AI_COST_GROQ_INPUT_PAISE_PER_1M=5564
+AI_COST_GROQ_OUTPUT_PAISE_PER_1M=7450
+AI_COST_ANTHROPIC_INPUT_PAISE_PER_1M=9430
+AI_COST_ANTHROPIC_OUTPUT_PAISE_PER_1M=47150
+```
+
+## Abuse Protection
+
+Resume generation is protected before the AI provider is called.
+
+- Frontend requests a signed challenge from `/api/challenge`.
+- User must answer the challenge before generation.
+- Backend verifies the challenge signature and expiry.
+- Hidden honeypot field blocks basic automated form posts.
+- Express rate limiting protects generation and admin routes.
+
+This reduces automated cost abuse, but it is not a full bot-management system. For public production traffic, consider adding Cloudflare Turnstile, hCaptcha, reCAPTCHA Enterprise, or a WAF rule in front of `/api/generate`.
+
+## Payment Flow
+
+1. User generates and previews a resume.
+2. Download remains locked until payment.
+3. Frontend creates a Razorpay order through `/api/payment/order`.
+4. Razorpay checkout returns order, payment, and signature details.
+5. Backend verifies the signature through `/api/payment/verify`.
+6. Backend marks payment success and sends payment confirmation email.
+7. Backend returns a signed access token scoped to that resume/payment.
+8. User sees a centered choice to download directly or email the files.
+9. Download records through `/api/payment/download`.
+10. Frontend clears the paid token after successful download.
+
+If payment succeeds but the customer closes the page or the session times out, admin can resend the stored generated resume from `/admin`.
+
+## Email Flow
+
+- Payment confirmation email is sent after successful payment verification.
+- Resume file email sends both PDF and DOCX attachments.
+- Support/admin resend sends the stored generated resume to the paid customer.
+- Gmail requires a 16-character App Password, not the normal Gmail password.
+- Support email: `supportresumealign@gmail.com`.
+
+## Production Deployment
+
+### Backend Environment
+
+Set production values on the backend host:
+
+```env
+NODE_ENV=production
+PORT=5000
+CLIENT_ORIGIN=https://your-frontend-domain.com
+APP_URL=https://your-frontend-domain.com
+DATABASE_PATH=/persistent/path/database.sqlite
+```
+
+Also set real values for:
+
+- `DEEPSEEK_API_KEY`
+- `GROQ_API_KEY` if using Groq fallback
+- `ANTHROPIC_API_KEY` if using Anthropic fallback
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+- `ACCESS_TOKEN_SECRET`
+- `ADMIN_ACCESS_TOKEN`
+- `EMAIL_HOST`
+- `EMAIL_PORT`
+- `EMAIL_USER`
+- `EMAIL_PASS`
+- `EMAIL_FROM`
+- all `AI_COST_*` values
+
+### Frontend Environment
+
+Set production API URL before building:
+
+```env
+VITE_API_URL=https://your-backend-domain.com/api
+```
+
+Build:
+
+```bash
+cd frontend
+npm run build
+```
+
+Deploy the generated `frontend/dist` folder.
+
+### Backend Start
+
+```bash
+cd backend
+npm install --omit=dev
+npm start
+```
+
+Use a process manager or platform service manager so the backend restarts after crashes or deploys.
+
+## Deployment Checklist
+
+Before going live:
+
+- Backend `NODE_ENV=production`.
+- Backend `CLIENT_ORIGIN` is the real frontend domain.
+- Backend `APP_URL` is the real frontend domain.
+- Frontend `VITE_API_URL` is the real backend API URL.
+- Razorpay keys are correct for test or live mode.
+- SMTP verification passes.
+- `ACCESS_TOKEN_SECRET` is strong and private.
+- `ADMIN_ACCESS_TOKEN` is strong, private, and different from `ACCESS_TOKEN_SECRET`.
+- SQLite database path is on persistent disk.
+- `.env` files are not committed.
+- Admin wrong token returns `401`.
+- `/api/generate` without a valid challenge returns `400`.
+- Frontend build passes.
+- Backend syntax checks pass.
+- npm audit is reviewed for backend and frontend.
+- A real payment test records payment success.
+- A real download records a row in `downloads`.
+- Admin dashboard shows the test payment/download after refresh.
+- Support resend works for a paid resume.
+
+## Verification Commands
+
+Frontend build:
+
+```bash
+cd frontend
+npm run build
+```
+
+Backend syntax checks:
+
+```bash
+cd backend
+node --check server.js
+node --check controllers/resumeController.js
+node --check controllers/paymentController.js
+node --check controllers/adminController.js
+node --check services/aiService.js
+node --check services/emailService.js
+node --check utils/challenge.js
+```
+
+Production dependency audit:
+
+```bash
+cd backend
+npm audit --omit=dev
+
+cd ../frontend
+npm audit --omit=dev
+```
+
+Health check:
+
+```bash
+curl https://your-backend-domain.com/health
+```
+
+Expected response:
+
+```json
+{"ok":true}
+```
+
+## Important Notes
+
+- Preview copy/print protections reduce casual misuse but are not DRM.
+- The watermark is intentionally applied to preview only. Exported paid files remain clean.
+- Generated resume content must stay truthful. The AI should improve wording and structure without inventing jobs, degrees, certifications, employers, metrics, or tools.
+- Same email reuse is allowed. Each new paid order can create a new paid token.
+- Keep provider pricing values current so the admin profit estimate stays useful.
+- For higher traffic, consider moving from SQLite to PostgreSQL/MySQL and adding a stronger bot-protection provider.

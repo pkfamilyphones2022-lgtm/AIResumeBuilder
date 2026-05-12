@@ -7,16 +7,17 @@ import {
   BadgeCheck,
   BriefcaseBusiness,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   CreditCard,
   FileBadge2,
   FileSearch,
   Globe,
   GraduationCap,
+  HelpCircle,
   LayoutTemplate,
   Mail,
-  MapPin,
-  PhoneCall,
+  Menu,
   ScanSearch,
   ShieldCheck,
   Sparkles,
@@ -24,9 +25,13 @@ import {
   Target,
   TrendingUp,
   Users,
+  X,
   Zap
 } from "lucide-react";
 import Form from "./components/Form.jsx";
+import AdminPanel from "./components/AdminPanel.jsx";
+import Samples from "./components/Samples.jsx";
+import { sampleResumes } from "./components/sampleResumes.js";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
@@ -184,7 +189,7 @@ const pricingFeatures = [
   "AI-generated resume content tailored to the job",
   "ATS score check with keyword gap analysis",
   "Resume PDF upload and intelligent parsing",
-  "26 professional resume templates",
+  "27 professional resume templates",
   "One-click PDF download after payment",
   "Grammar and clarity improvements via AI"
 ];
@@ -212,6 +217,49 @@ const atsRejectionReasons = [
   "Generic summaries with no role-specific language or measurable outcomes"
 ];
 
+const faqs = [
+  {
+    q: "What if my payment fails?",
+    a: "If your payment was deducted but the PDF didn't unlock, contact us at supportresumealign@gmail.com with your payment reference number. We'll verify within 24 hours and either manually unlock your download or process a full refund — no questions asked."
+  },
+  {
+    q: "How many resumes can I download?",
+    a: "Each payment of Rs.69 unlocks one PDF download for that resume session. You can generate and preview your resume as many times as you like for free — you only pay when you're satisfied and ready to download the final version."
+  },
+  {
+    q: "Can I edit the generated resume before downloading?",
+    a: "Yes. After the AI generates your resume, you can edit any section directly in the preview panel — adjust wording, update details, or switch between 27 professional templates. All of this is free; you pay only when you download."
+  },
+  {
+    q: "Is my data saved when I close the page?",
+    a: "Currently, resume data is not saved between sessions. We recommend completing your resume in one sitting. Account-based save history and version control are on our roadmap and coming soon."
+  },
+  {
+    q: "Can I generate resumes for multiple job roles?",
+    a: "Yes. Paste a new job description, adjust your details, and click Generate — each run creates a fresh, role-specific version. Each PDF download requires a separate Rs.69 payment, but regenerating is always free."
+  },
+  {
+    q: "What payment methods are accepted?",
+    a: "We use Razorpay for secure checkout, which supports UPI (Google Pay, PhonePe, Paytm), debit and credit cards (Visa, Mastercard, RuPay), net banking, and popular wallets."
+  },
+  {
+    q: "What is an ATS score and why does it matter?",
+    a: "ATS (Applicant Tracking System) is the software most companies use to filter resumes before a recruiter ever reads them. Our AI measures how well your resume matches the job description and gives a 0–100 score. A score of 95+ means you're far more likely to pass the filter and reach a human review."
+  },
+  {
+    q: "Can I re-generate if I'm not happy with the result?",
+    a: "Absolutely — regenerating is completely free. Adjust your inputs, add more detail, or paste a different job description and click Generate as many times as you need. Payment is only required when you're ready to download."
+  },
+  {
+    q: "Does this work for freshers as well as experienced professionals?",
+    a: "Yes. We have two dedicated flows — one for freshers (built around projects, education, internships, and achievements) and one for experienced professionals (built around impact bullets, career history, and role alignment). Both are fully AI-powered with ATS scoring."
+  },
+  {
+    q: "Is my personal and payment data secure?",
+    a: "Resume details you enter are used only to generate your resume and are not stored on our servers after your session. Payments are handled entirely by Razorpay, a PCI-DSS compliant payment gateway — we never see or store your card details."
+  }
+];
+
 const heroKeywords = [
   { label: "React.js",    top: "6%",  left: "72%", delay: 0.8 },
   { label: "Python",      top: "18%", left: "3%",  delay: 1.4 },
@@ -220,6 +268,36 @@ const heroKeywords = [
   { label: "Node.js",     top: "-4%", left: "36%", delay: 1.1 },
   { label: "ATS Ready", top: "55%", left: "-2%", delay: 3.2 },
 ];
+
+function FaqItem({ question, answer, isOpen, onToggle }) {
+  return (
+    <div className={`faq-item ${isOpen ? "faq-open" : ""}`}>
+      <button className="faq-question" onClick={onToggle} aria-expanded={isOpen}>
+        <span>{question}</span>
+        <motion.span
+          className="faq-chevron"
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <ChevronDown size={18} />
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            className="faq-answer"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <p>{answer}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 /* Fix #9 — removed useInView (element is always visible in hero).
    Animation now always plays on mount with a short delay. */
@@ -261,7 +339,7 @@ function usePathname() {
 
 function navigateTo(path, setPathname) {
   window.history.pushState({}, "", path);
-  setPathname(path);
+  setPathname(window.location.pathname);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -300,13 +378,30 @@ export default function App() {
   const [pathname, setPathname] = usePathname();
   const isBuilderPage = pathname === "/builder" || pathname === "/fresher-builder";
   const isFresherBuilder = pathname === "/fresher-builder";
+  const isSamplesPage = pathname === "/samples";
+  const isAdminPage = pathname === "/admin";
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [openFaq, setOpenFaq] = useState(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setShowScrollTop(window.scrollY > 400);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  if (isSamplesPage) {
+    return (
+      <Samples
+        onBack={() => navigateTo("/", setPathname)}
+        onNavigate={(path) => navigateTo(path, setPathname)}
+      />
+    );
+  }
+
+  if (isAdminPage) {
+    return <AdminPanel onBack={() => navigateTo("/", setPathname)} />;
+  }
 
   if (isBuilderPage) {
     return (
@@ -316,13 +411,17 @@ export default function App() {
 
         <header className="builder-hero">
           <nav className="builder-brandbar">
-            <div className="brand-lockup builder-brand-lockup">
+            <button
+              className="brand-lockup builder-brand-lockup brand-home-link"
+              onClick={() => navigateTo("/", setPathname)}
+              title="Go to home"
+            >
               <span className="brand-mark">R</span>
               <div>
                 <p>ResumeAlignAI</p>
                 <span>{isFresherBuilder ? "Fresher workspace" : "Experienced workspace"}</span>
               </div>
-            </div>
+            </button>
 
             <button className="builder-back-button" onClick={() => navigateTo("/", setPathname)}>
               <ChevronLeft aria-hidden="true" />
@@ -339,7 +438,7 @@ export default function App() {
             <span>LIMITED OFFER</span>
             <strong>Unlock your resume PDF for Rs.69</strong>
             <em>Rs.299</em>
-            <small>77% off · AI resume + ATS score + 26 templates</small>
+            <small>77% off · AI resume + ATS score + 27 templates</small>
           </motion.div>
 
           <div className="builder-workspace-head">
@@ -434,19 +533,42 @@ export default function App() {
             </div>
           </div>
 
-          <div className="topbar-links">
-            <a href="#benefits">Benefits</a>
-            <a href="#features">Features</a>
-            <a href="#upcoming">Upcoming</a>
-            <a href="#proof">Reviews</a>
-            <a href="#contact">Contact</a>
-            <button className="topbar-cta" onClick={() => navigateTo("/fresher-builder", setPathname)}>
+          <button
+            className="hamburger-btn"
+            onClick={() => setMobileNavOpen((o) => !o)}
+            aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
+          >
+            {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+
+          <div className={`topbar-links ${mobileNavOpen ? "is-open" : ""}`}>
+            <div className="nav-mobile-header">
+              <span>Menu</span>
+              <button className="hamburger-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
+                <X size={20} />
+              </button>
+            </div>
+            <a href="#benefits" onClick={() => setMobileNavOpen(false)}>Benefits</a>
+            <a href="#features" onClick={() => setMobileNavOpen(false)}>Features</a>
+            <a href="#upcoming" onClick={() => setMobileNavOpen(false)}>Upcoming</a>
+            <a href="#proof" onClick={() => setMobileNavOpen(false)}>Reviews</a>
+            <a href="#faq" onClick={() => setMobileNavOpen(false)}>FAQ</a>
+            <a href="#contact" onClick={() => setMobileNavOpen(false)}>Contact</a>
+            <button className="topbar-cta topbar-samples-btn" onClick={() => { setMobileNavOpen(false); navigateTo("/samples", setPathname); }}>
+              Sample Resumes
+            </button>
+            <button className="topbar-cta" onClick={() => { setMobileNavOpen(false); navigateTo("/fresher-builder", setPathname); }}>
               Fresher Builder
             </button>
-            <button className="topbar-cta" onClick={() => navigateTo("/builder", setPathname)}>
+            <button className="topbar-cta" onClick={() => { setMobileNavOpen(false); navigateTo("/builder", setPathname); }}>
               Experienced Builder
             </button>
           </div>
+
+          <div
+            className={`nav-overlay ${mobileNavOpen ? "is-open" : ""}`}
+            onClick={() => setMobileNavOpen(false)}
+          />
         </nav>
 
         <div className="hero-grid">
@@ -803,6 +925,80 @@ export default function App() {
         </motion.div>
       </section>
 
+      {/* ── SAMPLE RESUMES ── */}
+      <section className="content-band sample-resumes-section" id="samples">
+        <motion.div
+          className="section-heading"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.25 }}
+          variants={fadeUp}
+        >
+          <p>See before you build</p>
+          <h2>Browse sample resumes for your role — fresher or experienced.</h2>
+          <p className="section-subtext">
+            Not sure what a great resume looks like for your target role? Browse real AI-generated samples across {sampleResumes.length} fresher and experienced profiles. Pick your role, explore 27 templates, then build your own version in minutes.
+          </p>
+        </motion.div>
+
+        <div className="sample-role-grid">
+          {sampleResumes.map(({ id, label, category, description, color }, i) => (
+            <motion.div
+              key={id}
+              className="sample-role-card"
+              style={{ "--role-color": color }}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.2 }}
+              custom={i}
+              variants={fadeUp}
+              whileHover={{ y: -6, boxShadow: `0 20px 48px ${color}22` }}
+            >
+              <span className="sample-role-dot" style={{ background: color }} />
+              <span className="sample-role-cat" data-type={category}>{category}</span>
+              <h3>{label}</h3>
+              <p>{description}</p>
+              <button
+                className="sample-role-btn"
+                style={{ color, borderColor: `${color}44` }}
+                onClick={() => navigateTo(`/samples?sample=${id}`, setPathname)}
+              >
+                View Sample <ArrowRight size={14} />
+              </button>
+            </motion.div>
+          ))}
+
+          <motion.div
+            className="sample-role-card sample-cta-card"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            custom={sampleResumes.length}
+            variants={fadeUp}
+            whileHover={{ y: -6 }}
+          >
+            <FileSearch size={28} style={{ color: "#0f766e", marginBottom: 10 }} />
+            <h3>Don't see your role?</h3>
+            <p>Our AI builds custom resumes for any job title — just add your details and job description.</p>
+            <button className="hero-primary" style={{ marginTop: 12 }} onClick={() => navigateTo("/builder", setPathname)}>
+              Build Custom Resume <ArrowRight size={14} />
+            </button>
+          </motion.div>
+        </div>
+
+        <motion.div
+          className="samples-section-cta"
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >
+          <button className="hero-secondary" onClick={() => navigateTo("/samples", setPathname)}>
+            Browse All Samples <ArrowRight size={16} />
+          </button>
+        </motion.div>
+      </section>
+
       <section className="content-band" id="benefits">
         <div className="section-heading">
           <p>What the customer gets</p>
@@ -1063,6 +1259,38 @@ export default function App() {
         </motion.div>
       </section>
 
+      {/* ── FAQ ── */}
+      <section className="content-band faq-section" id="faq">
+        <motion.div
+          className="section-heading"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.25 }}
+          variants={fadeUp}
+        >
+          <p><HelpCircle size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />Got questions?</p>
+          <h2>Frequently asked questions.</h2>
+        </motion.div>
+
+        <motion.div
+          className="faq-list"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.1 }}
+          variants={fadeUp}
+        >
+          {faqs.map((faq, i) => (
+            <FaqItem
+              key={i}
+              question={faq.q}
+              answer={faq.a}
+              isOpen={openFaq === i}
+              onToggle={() => setOpenFaq(openFaq === i ? null : i)}
+            />
+          ))}
+        </motion.div>
+      </section>
+
       <section className="content-band contact-band" id="contact">
         <motion.div
           className="contact-panel"
@@ -1074,18 +1302,10 @@ export default function App() {
           <p>Contact details</p>
           <h2>Keep a clear way for interested users to reach the team.</h2>
           <div className="contact-grid">
-            <a href="mailto:hello@resumeai.app">
+            <a href="mailto:supportresumealign@gmail.com">
               <Mail aria-hidden="true" />
-              hello@resumeai.app
+              supportresumealign@gmail.com
             </a>
-            <a href="tel:+919876543210">
-              <PhoneCall aria-hidden="true" />
-              +91 98765 43210
-            </a>
-            <div>
-              <MapPin aria-hidden="true" />
-              Bengaluru, India
-            </div>
           </div>
         </motion.div>
       </section>

@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Award, BookOpen, Briefcase, CheckCircle2, FileText,
-  FolderOpen, Plus, Sparkles, Target, Trash2, Upload, User
+  FolderOpen, Info, Plus, Sparkles, Target, Trash2, Upload, User
 } from "lucide-react";
 import Preview from "./Preview.jsx";
-import Loader from "./Loader.jsx";
+import ResumeGenerationLoader from "./ResumeGenerationLoader.jsx";
 import ATSScore from "./ATSScore.jsx";
 import { normalizeResumeData, resumeToPlainText } from "./resumeUtils.js";
+import { parseUploadError, parseGenerateError } from "../utils/apiError.js";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -36,6 +37,7 @@ const createInitialForm = (type = "Experienced") => ({
   trainingList: [],
   skills: "",
   certifications: "",
+  languages: "",
   experiences: [],
   projectsList: [],
   educationList: [],
@@ -94,8 +96,28 @@ export default function Form({ mode = "experienced" }) {
   const [error, setError] = useState("");
   const [uploadHint, setUploadHint] = useState("");
   const [previewActive, setPreviewActive] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [resumeId, setResumeId] = useState(null);
+  const [isImproving, setIsImproving] = useState(false);
+  const [challenge, setChallenge] = useState(null);
+  const [challengeAnswer, setChallengeAnswer] = useState("");
+  const [website, setWebsite] = useState("");
 
   const set = (field, value) => setForm((c) => ({ ...c, [field]: value }));
+
+  const loadChallenge = async () => {
+    try {
+      const response = await axios.get(`${API}/challenge`);
+      setChallenge(response.data);
+      setChallengeAnswer("");
+    } catch {
+      setChallenge(null);
+    }
+  };
+
+  useEffect(() => {
+    loadChallenge();
+  }, []);
 
   const addEntry = (field, template) =>
     setForm((c) => ({ ...c, [field]: [...c[field], template] }));
@@ -128,6 +150,7 @@ export default function Form({ mode = "experienced" }) {
     achievements: form.achievements,
     skills: form.skills,
     certifications: form.certifications,
+    languages: form.languages,
     resumeRulesMode: fixedType === "Fresher" ? "fresher-student" : "experienced-professional",
     training: form.trainingList
       .filter((item) => item.role || item.organization || item.learning)
@@ -185,7 +208,6 @@ export default function Form({ mode = "experienced" }) {
       const response = await axios.post(`${API}/upload`, data);
       setResumeText(response.data.text);
       if (response.data.parsedData) {
-        // Skip keys that don't map to form fields or would overwrite user-controlled inputs
         const SKIP = new Set(["type", "job", "experience", "projects", "education", "certifications"]);
         const parsed = response.data.parsedData;
         const updates = Object.fromEntries(
@@ -194,21 +216,34 @@ export default function Form({ mode = "experienced" }) {
         setForm((current) => {
           const next = { ...current };
           Object.entries(updates).forEach(([key, value]) => {
-            if (!current[key]) next[key] = value;
+            if (key === "skills") {
+              // Parser returns comma-separated; form textarea expects one per line
+              if (!current[key]) {
+                next[key] = value.split(",").map((s) => s.trim()).filter(Boolean).join("\n");
+              }
+            } else if (!current[key]) {
+              next[key] = value;
+            }
           });
           return next;
         });
+        const FIELD_LABELS = {
+          name: "Name", email: "Email", phone: "Phone",
+          targetTitle: "Target job title", location: "Location",
+          linkedin: "LinkedIn", portfolio: "Portfolio"
+        };
         const filled = ["name", "email", "phone", "targetTitle", "location", "linkedin", "portfolio"]
-          .filter((k) => updates[k]);
+          .filter((k) => updates[k])
+          .map((k) => FIELD_LABELS[k] || k);
         const filledMsg = filled.length > 0
-          ? `Auto-filled: ${filled.join(", ")}. Review the fields and fill in anything missing.`
+          ? `Auto-filled: ${filled.join(", ")}. Review and complete any missing fields.`
           : "Resume parsed — fill in your details above then generate.";
         setUploadHint(filledMsg);
       } else {
         setUploadHint("Resume parsed — AI will use it as foundation and significantly improve content for your target role.");
       }
     } catch (err) {
-      setError(err.response?.data?.error || "Resume upload failed.");
+      setError(parseUploadError(err));
     } finally {
       setUploading(false);
     }
@@ -219,7 +254,6 @@ export default function Form({ mode = "experienced" }) {
     if (!form.name.trim()) return "Please enter your full name.";
     if (!form.email.trim()) return "Please enter a professional email address.";
     if (!form.phone.trim()) return "Please enter your phone number.";
-    if (!form.location.trim()) return "Please enter your current city/country.";
     if (!form.targetTitle.trim()) return "Please enter the target job title.";
     const userData = buildUserData();
     const hasContent =
@@ -233,6 +267,8 @@ export default function Form({ mode = "experienced" }) {
       resumeText;
     if (!hasContent)
       return "Add at least one experience, project, or education entry so the AI has content to work with.";
+    if (!challenge?.challengeId || !challengeAnswer.trim())
+      return "Please complete the security check before generating.";
     return null;
   };
 
@@ -241,6 +277,7 @@ export default function Form({ mode = "experienced" }) {
     if (validationError) { setError(validationError); return; }
     setPreviewActive(true);
     setError("");
+    setIsImproving(false);
     setLoading(true);
     setLoadingMsg("Building your AI resume…");
     setResult(null);
@@ -249,20 +286,27 @@ export default function Form({ mode = "experienced" }) {
       const response = await axios.post(`${API}/generate`, {
         userData: buildUserData(),
         jobDescription: form.job,
-        resumeText
+        resumeText,
+        challengeId: challenge?.challengeId,
+        challengeAnswer,
+        website
       });
       setResult(normalizeResumeData(response.data.result));
       setAtsData(response.data.ats || null);
+      if (response.data.userId) setUserId(response.data.userId);
+      if (response.data.resumeId) setResumeId(response.data.resumeId);
     } catch (err) {
-      setError(err.response?.data?.error || "Resume generation failed.");
+      setError(parseGenerateError(err));
+      loadChallenge();
     } finally {
       setLoading(false);
     }
   };
 
-  const improve = async (missingKeywords, currentScore) => {
+  const improve = async (missingKeywords, currentScore, failedChecks) => {
     setPreviewActive(true);
     setError("");
+    setIsImproving(true);
     setLoading(true);
     setLoadingMsg("Improving ATS alignment…");
     try {
@@ -271,14 +315,16 @@ export default function Form({ mode = "experienced" }) {
         userData: buildUserData(),
         jobDescription: form.job,
         missingKeywords,
-        currentScore
+        currentScore,
+        failedChecks: failedChecks || []
       });
       setResult(normalizeResumeData(response.data.result));
       setAtsData(response.data.ats || null);
     } catch (err) {
-      setError(err.response?.data?.error || "AI improvement failed.");
+      setError(parseGenerateError(err));
     } finally {
       setLoading(false);
+      setIsImproving(false);
     }
   };
 
@@ -300,6 +346,13 @@ export default function Form({ mode = "experienced" }) {
             <h1>{isExperienced ? "Generate your experienced resume" : "Generate your fresher resume"}</h1>
           </div>
           <FileText aria-hidden="true" />
+        </div>
+
+        <div className="mandatory-info-banner">
+          <Info size={15} aria-hidden="true" />
+          <span>
+            Fields marked <span className="required-star">*</span> are required. Fill all mandatory fields and add at least one experience, project, or education entry before generating.
+          </span>
         </div>
 
         {/* ── SECTION 1: Candidate Profile ── */}
@@ -348,7 +401,7 @@ export default function Form({ mode = "experienced" }) {
             </motion.label>
 
             <motion.label custom={5} variants={fieldAnim} initial="hidden" animate="show">
-              <RequiredLabel>Location</RequiredLabel>
+              <OptionalLabel>Location</OptionalLabel>
               <input placeholder="Bengaluru, India" value={form.location} onChange={(e) => set("location", e.target.value)} />
             </motion.label>
 
@@ -542,7 +595,7 @@ export default function Form({ mode = "experienced" }) {
 
               <div className="fresher-rule-strip">
                 <span>Fresher logic active</span>
-                <p>AI will prioritize Objective, Skills, Projects, Education, Internship/Training, Certifications, and Achievements.</p>
+                <p>AI will prioritize Career Objective, Technical Skills, Academic Projects, Internship / Training, Education, Certifications, and Achievements.</p>
               </div>
 
               <div className="form-grid">
@@ -668,7 +721,7 @@ export default function Form({ mode = "experienced" }) {
         <motion.div className="form-section" variants={sectionAnim} initial="hidden" animate="show">
           <SectionHeader
             icon={FolderOpen}
-            title={isExperienced ? "Notable Projects" : "Projects"}
+            title={isExperienced ? "Notable Projects" : "Academic Projects"}
             subtitle={
               isExperienced
                 ? "Key projects from your career — tech used, scope, and measurable impact"
@@ -826,7 +879,7 @@ export default function Form({ mode = "experienced" }) {
         <motion.div className="form-section" variants={sectionAnim} initial="hidden" animate="show">
           <SectionHeader
             icon={Award}
-            title="Skills & Certifications"
+            title={isExperienced ? "Skills & Certifications" : "Technical Skills & Certifications"}
             subtitle="Technical skills, tools, frameworks, and credentials"
           />
           <div className="form-grid">
@@ -849,6 +902,18 @@ export default function Form({ mode = "experienced" }) {
                 onChange={(e) => set("certifications", e.target.value)}
               />
             </motion.label>
+
+            {isExperienced && (
+              <motion.label custom={2} variants={fieldAnim} initial="hidden" animate="show" className="wide">
+                Languages <span className="field-optional">(one per line)</span>
+                <textarea
+                  rows={2}
+                  placeholder={"English\nHindi\nMarathi"}
+                  value={form.languages}
+                  onChange={(e) => set("languages", e.target.value)}
+                />
+              </motion.label>
+            )}
 
           </div>
         </motion.div>
@@ -935,7 +1000,41 @@ export default function Form({ mode = "experienced" }) {
             {uploadHint}
           </motion.p>
         )}
-        {error && <p className="error">{error}</p>}
+        {error && (
+          <motion.div
+            className="error-banner"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <Info size={15} aria-hidden="true" />
+            <span>{error}</span>
+            <button className="error-banner-close" onClick={() => setError("")} aria-label="Dismiss">✕</button>
+          </motion.div>
+        )}
+
+        <div className="security-check">
+          <input
+            className="website-field"
+            tabIndex="-1"
+            autoComplete="off"
+            value={website}
+            onChange={(event) => setWebsite(event.target.value)}
+            aria-hidden="true"
+          />
+          <div>
+            <strong>Security check</strong>
+            <span>To protect resume credits, answer: {challenge?.question || "loading..."}</span>
+          </div>
+          <input
+            inputMode="numeric"
+            value={challengeAnswer}
+            onChange={(event) => setChallengeAnswer(event.target.value)}
+            placeholder="Answer"
+            aria-label="Security check answer"
+          />
+          <button type="button" onClick={loadChallenge}>New</button>
+        </div>
 
         <motion.button
           className="primary-action"
@@ -960,7 +1059,11 @@ export default function Form({ mode = "experienced" }) {
         <AnimatePresence mode="wait">
           {loading && (
             <motion.div key="loader" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <Loader />
+              <ResumeGenerationLoader
+                name={form.name}
+                role={form.targetTitle}
+                isImproving={isImproving}
+              />
             </motion.div>
           )}
           {!loading && !result && !previewActive && (
@@ -989,7 +1092,7 @@ export default function Form({ mode = "experienced" }) {
               <FileText aria-hidden="true" />
               <strong>Resume preview will appear here</strong>
               <p>
-                Your AI-optimised resume will show here with live ATS scoring, keyword suggestions, and 26 template designs.
+                Your AI-optimised resume will show here with live ATS scoring, keyword suggestions, and 27 template designs.
               </p>
             </motion.div>
           )}
@@ -1010,7 +1113,14 @@ export default function Form({ mode = "experienced" }) {
                 onUpdateResume={setResult}
                 onImprove={improve}
               />
-              <Preview result={result} onChange={setResult} />
+              <Preview
+                result={result}
+                onChange={setResult}
+                userId={userId}
+                resumeId={resumeId}
+                userName={form.name}
+                userEmail={form.email}
+              />
             </motion.div>
           )}
         </AnimatePresence>

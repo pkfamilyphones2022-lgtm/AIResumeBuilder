@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, CheckCircle2, Download, FileEdit, LockKeyhole, Mail, Palette, Plus, Trash2, X } from "lucide-react";
-import { payNow, restorePaymentToken } from "./Payment.jsx";
+import { clearPaymentToken, getPaymentTokenPayload, payNow, restorePaymentToken } from "./Payment.jsx";
 import { normalizeResumeData, resumeToPlainText, templateCatalog } from "./resumeUtils.js";
 
 const resumeVerifyChecks = [
@@ -14,7 +15,7 @@ const resumeVerifyChecks = [
 
 const atsWarningItems = [
   "ATS scans for exact keyword matches — ensure job-specific terms appear naturally in your resume",
-  "Use standard section headings: Experience, Education, Skills — avoid creative labels",
+  "Use standard section headings such as Work Experience, Education, Key Skills, Technical Skills, and Projects",
   "Avoid tables, text boxes, or columns — many ATS parsers read only left-to-right plain text",
   "Spell out abbreviations at least once (e.g., 'Search Engine Optimization (SEO)')",
   "Your ATS score should ideally be above 75% before submitting to competitive roles"
@@ -42,16 +43,24 @@ function ResumeDocument({ resume, selectedTemplate, resumeRef, exportMode = fals
   const layout = template.layout || "sidebar-left";
 
   const contactItems = [
-    resume.contact.email,
     resume.contact.phone,
-    resume.contact.location,
+    resume.contact.email,
     resume.contact.linkedin,
+    resume.contact.location,
     resume.contact.portfolio
   ].filter(Boolean);
+  const spotlightSkills = resume.skills.slice(0, 5);
+  const isFresher = String(resume.candidateType || "").toLowerCase() === "fresher";
+  const sectionLabels = {
+    summary: isFresher ? "Career Objective" : "Professional Summary",
+    skills: isFresher ? "Technical Skills" : "Key Skills",
+    experience: isFresher ? "Internship / Training" : "Work Experience",
+    projects: isFresher ? "Academic Projects" : "Projects"
+  };
 
   const skillsGrid = resume.skills.length > 0 && (
     <section>
-      <h3>Skills</h3>
+      <h3>{sectionLabels.skills}</h3>
       <ul className="resume-tag-list">
         {resume.skills.map((skill) => <li key={skill}>{skill}</li>)}
       </ul>
@@ -60,7 +69,7 @@ function ResumeDocument({ resume, selectedTemplate, resumeRef, exportMode = fals
 
   const skillsChips = resume.skills.length > 0 && (
     <section>
-      <h3>Skills</h3>
+      <h3>{sectionLabels.skills}</h3>
       <ul className="resume-skill-chips">
         {resume.skills.map((skill) => <li key={skill}>{skill}</li>)}
       </ul>
@@ -69,50 +78,46 @@ function ResumeDocument({ resume, selectedTemplate, resumeRef, exportMode = fals
 
   const skillsDots = resume.skills.length > 0 && (
     <section>
-      <h3>Skills</h3>
+      <h3>{sectionLabels.skills}</h3>
       <p className="resume-skills-dots">{resume.skills.join(" · ")}</p>
     </section>
   );
 
-  const certs = (resume.certifications.length > 0 || resume.coursework.length > 0 || resume.achievements.length > 0) && (
-    <>
-      {resume.certifications.length > 0 && (
-        <section>
-          <h3>Certifications</h3>
-          <ul className="resume-line-list">
-            {resume.certifications.map((item) => <li key={item}>{item}</li>)}
-          </ul>
-        </section>
-      )}
-      {resume.coursework.length > 0 && (
-        <section>
-          <h3>Relevant Coursework</h3>
-          <ul className="resume-line-list">
-            {resume.coursework.map((item) => <li key={item}>{item}</li>)}
-          </ul>
-        </section>
-      )}
-      {resume.achievements.length > 0 && (
-        <section>
-          <h3>Achievements</h3>
-          <ul className="resume-line-list">
-            {resume.achievements.map((item) => <li key={item}>{item}</li>)}
-          </ul>
-        </section>
-      )}
-    </>
+  const certifications = resume.certifications.length > 0 && (
+    <section>
+      <h3>Certifications</h3>
+      <ul className="resume-line-list">
+        {resume.certifications.map((item) => <li key={item}>{item}</li>)}
+      </ul>
+    </section>
+  );
+
+  const achievements = resume.achievements.length > 0 && (
+    <section>
+      <h3>Achievements</h3>
+      <ul className="resume-line-list">
+        {resume.achievements.map((item) => <li key={item}>{item}</li>)}
+      </ul>
+    </section>
+  );
+
+  const languages = !isFresher && resume.languages.length > 0 && (
+    <section>
+      <h3>Languages</h3>
+      <p className="resume-skills-dots">{resume.languages.join(" · ")}</p>
+    </section>
   );
 
   const summary = resume.summary && (
     <section>
-      <h3>Professional Summary</h3>
+      <h3>{sectionLabels.summary}</h3>
       <p>{resume.summary}</p>
     </section>
   );
 
   const experience = resume.experience.length > 0 && (
     <section>
-      <h3>Experience</h3>
+      <h3>{sectionLabels.experience}</h3>
       {resume.experience.map((item, index) => (
         <article key={`exp-view-${index}`} className="resume-item">
           <div className="resume-item-head">
@@ -135,7 +140,7 @@ function ResumeDocument({ resume, selectedTemplate, resumeRef, exportMode = fals
 
   const projects = resume.projects.length > 0 && (
     <section>
-      <h3>Projects</h3>
+      <h3>{sectionLabels.projects}</h3>
       {resume.projects.map((item, index) => (
         <article key={`project-view-${index}`} className="resume-item">
           <div className="resume-item-head">
@@ -170,8 +175,55 @@ function ResumeDocument({ resume, selectedTemplate, resumeRef, exportMode = fals
     </section>
   );
 
+  const orderedMainSections = isFresher
+    ? [summary, skillsChips, projects, experience, education, certifications, achievements]
+    : [summary, skillsChips, experience, projects, education, certifications, achievements, languages];
+  const orderedMinimalSections = isFresher
+    ? [summary, skillsDots, projects, experience, education, certifications, achievements]
+    : [summary, skillsDots, experience, projects, education, certifications, achievements, languages];
+  const workThenProjectSections = isFresher ? [projects, experience, education] : [experience, projects, education];
+  const sidebarSections = isFresher
+    ? [skillsGrid, certifications, achievements]
+    : [skillsGrid, certifications, achievements, languages];
+
   const canvasClass = `resume-canvas layout-${layout} template-${selectedTemplate}${exportMode ? " resume-export-sheet" : ""}`;
   const style = templateStyle(selectedTemplate);
+
+  if (layout === "premium-card") {
+    return (
+      <div className={canvasClass} style={style} ref={resumeRef}>
+        <div className="rz-luxe-hero">
+          <div className="rz-luxe-nameplate">
+            <span className="rz-luxe-kicker">Premium Resume</span>
+            <h1>{resume.fullName || "Your Name"}</h1>
+            <p className="resume-role">{resume.title || "Target Role"}</p>
+          </div>
+          <div className="rz-luxe-contact">
+            {contactItems.map((item) => <span key={item}>{item}</span>)}
+          </div>
+        </div>
+
+        <div className="rz-luxe-strip">
+          <strong>Career Snapshot</strong>
+          <div>
+            {spotlightSkills.length > 0
+              ? spotlightSkills.map((skill) => <span key={skill}>{skill}</span>)
+              : <span>ATS-ready profile</span>}
+          </div>
+        </div>
+
+        <div className="rz-luxe-body">
+          <div className="rz-luxe-main">
+            {summary}
+            {workThenProjectSections}
+          </div>
+          <aside className="rz-luxe-side">
+            {sidebarSections}
+          </aside>
+        </div>
+      </div>
+    );
+  }
 
   /* ── BANNER: full-width coloured header, single-column body ── */
   if (layout === "banner") {
@@ -187,12 +239,7 @@ function ResumeDocument({ resume, selectedTemplate, resumeRef, exportMode = fals
           </div>
         </div>
         <div className="rz-single-body">
-          {summary}
-          {skillsChips}
-          {experience}
-          {projects}
-          {education}
-          {certs}
+          {orderedMainSections}
         </div>
       </div>
     );
@@ -210,12 +257,7 @@ function ResumeDocument({ resume, selectedTemplate, resumeRef, exportMode = fals
           </div>
         </div>
         <div className="rz-single-body">
-          {summary}
-          {skillsChips}
-          {experience}
-          {projects}
-          {education}
-          {certs}
+          {orderedMainSections}
         </div>
       </div>
     );
@@ -233,12 +275,7 @@ function ResumeDocument({ resume, selectedTemplate, resumeRef, exportMode = fals
           </div>
         </div>
         <div className="rz-minimal-body">
-          {summary}
-          {skillsDots}
-          {experience}
-          {projects}
-          {education}
-          {certs}
+          {orderedMinimalSections}
         </div>
       </div>
     );
@@ -260,12 +297,12 @@ function ResumeDocument({ resume, selectedTemplate, resumeRef, exportMode = fals
           <div className="rz-exec-col">
             {summary}
             {skillsGrid}
-            {certs}
+            {certifications}
+            {achievements}
+            {languages}
           </div>
           <div className="rz-exec-col">
-            {experience}
-            {projects}
-            {education}
+            {workThenProjectSections}
           </div>
         </div>
       </div>
@@ -288,14 +325,11 @@ function ResumeDocument({ resume, selectedTemplate, resumeRef, exportMode = fals
         </div>
         <div className="resume-body">
           <aside className="resume-side">
-            {skillsGrid}
-            {certs}
+            {sidebarSections}
           </aside>
           <div className="resume-main">
             {summary}
-            {experience}
-            {projects}
-            {education}
+            {workThenProjectSections}
           </div>
         </div>
       </div>
@@ -318,13 +352,10 @@ function ResumeDocument({ resume, selectedTemplate, resumeRef, exportMode = fals
         <div className="rz-body-right">
           <div className="resume-main">
             {summary}
-            {experience}
-            {projects}
-            {education}
+            {workThenProjectSections}
           </div>
           <aside className="resume-side">
-            {skillsGrid}
-            {certs}
+            {sidebarSections}
           </aside>
         </div>
       </div>
@@ -345,21 +376,18 @@ function ResumeDocument({ resume, selectedTemplate, resumeRef, exportMode = fals
       </div>
       <div className="resume-body">
         <aside className="resume-side">
-          {skillsGrid}
-          {certs}
+          {sidebarSections}
         </aside>
         <div className="resume-main">
           {summary}
-          {experience}
-          {projects}
-          {education}
+          {workThenProjectSections}
         </div>
       </div>
     </div>
   );
 }
 
-export default function Preview({ result, onChange }) {
+export default function Preview({ result, onChange, defaultTemplate, userId, resumeId, userName, userEmail, viewOnly = false }) {
   const previewRef = useRef(null);
   const exportRef = useRef(null);
   const stageRef = useRef(null);
@@ -367,12 +395,26 @@ export default function Preview({ result, onChange }) {
   const [paid, setPaid] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const [checkingPayment, setCheckingPayment] = useState(true);
-  const [selectedTemplate, setSelectedTemplate] = useState(templateCatalog[0].id);
+  const [fileEmailStatus, setFileEmailStatus] = useState("idle"); // idle | sending | sent | failed
+  const [showEmailWarning, setShowEmailWarning] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(defaultTemplate || templateCatalog[0].id);
   const [downloadFormat, setDownloadFormat] = useState("pdf"); // pdf | docx
   const [showWarning, setShowWarning] = useState(false);
   const [warningChecked, setWarningChecked] = useState([false, false, false, false, false]);
 
   const resume = useMemo(() => normalizeResumeData(result), [result]);
+  const layoutCount = useMemo(() => new Set(templateCatalog.map((template) => template.layout)).size, []);
+  const isFresherResume = String(resume.candidateType || "").toLowerCase() === "fresher";
+  const editorLabels = {
+    summary: isFresherResume ? "Career objective" : "Professional summary",
+    skills: isFresherResume ? "Technical skills" : "Key skills",
+    experience: isFresherResume ? "Internship / Training" : "Work experience",
+    projects: isFresherResume ? "Academic projects" : "Projects"
+  };
+  const paymentScope = useMemo(
+    () => resumeId || `${resume.fullName}|${resume.title}|${resume.contact.email}`,
+    [resumeId, resume.fullName, resume.title, resume.contact.email]
+  );
 
   useEffect(() => {
     const CANVAS_WIDTH = 794;
@@ -389,11 +431,34 @@ export default function Preview({ result, onChange }) {
   }, []);
 
   useEffect(() => {
-    restorePaymentToken().then((valid) => {
+    if (viewOnly) {
+      setCheckingPayment(false);
+      return;
+    }
+
+    setCheckingPayment(true);
+    setPaid(false);
+    restorePaymentToken(paymentScope).then((valid) => {
       if (valid) setPaid(true);
       setCheckingPayment(false);
     });
+  }, [paymentScope, viewOnly]);
+
+  useEffect(() => {
+    const blockPrintShortcut = (event) => {
+      const key = event.key?.toLowerCase();
+      if ((event.ctrlKey || event.metaKey) && key === "p") {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener("keydown", blockPrintShortcut);
+    return () => window.removeEventListener("keydown", blockPrintShortcut);
   }, []);
+
+  const blockPreviewCopy = (event) => {
+    event.preventDefault();
+  };
 
   const updateResume = (updater) => {
     onChange((current) => normalizeResumeData(typeof updater === "function" ? updater(current) : updater));
@@ -511,14 +576,21 @@ export default function Preview({ result, onChange }) {
   const exportDocx = async () => {
     const { Document, HeadingLevel, Packer, Paragraph, TextRun } = await import("docx");
     const contactLine = [
-      resume.contact.email,
       resume.contact.phone,
-      resume.contact.location,
+      resume.contact.email,
       resume.contact.linkedin,
+      resume.contact.location,
       resume.contact.portfolio
     ]
       .filter(Boolean)
       .join(" | ");
+    const isFresherDoc = String(resume.candidateType || "").toLowerCase() === "fresher";
+    const docLabels = {
+      summary: isFresherDoc ? "Career Objective" : "Professional Summary",
+      skills: isFresherDoc ? "Technical Skills" : "Key Skills",
+      experience: isFresherDoc ? "Internship / Training" : "Work Experience",
+      projects: isFresherDoc ? "Academic Projects" : "Projects"
+    };
 
     const heading = (text) =>
       new Paragraph({
@@ -538,26 +610,8 @@ export default function Preview({ result, onChange }) {
             })
         );
 
-    const children = [
-      new Paragraph({
-        children: [new TextRun({ text: resume.fullName || "Your Name", bold: true, size: 34 })],
-        spacing: { after: 80 }
-      }),
-      resume.title
-        ? new Paragraph({
-            children: [new TextRun({ text: resume.title, italics: true })],
-            spacing: { after: 120 }
-          })
-        : null,
-      contactLine ? new Paragraph({ text: contactLine, spacing: { after: 200 } }) : null,
-
-      resume.summary ? heading("Professional Summary") : null,
-      resume.summary ? new Paragraph({ text: resume.summary }) : null,
-
-      resume.skills.length ? heading("Skills") : null,
-      resume.skills.length ? new Paragraph({ text: resume.skills.join(", ") }) : null,
-
-      resume.experience.length ? heading("Experience") : null,
+    const experienceChildren = [
+      resume.experience.length ? heading(docLabels.experience) : null,
       ...resume.experience.flatMap((item) => [
         new Paragraph({
           children: [
@@ -569,9 +623,11 @@ export default function Preview({ result, onChange }) {
         }),
         item.location ? new Paragraph({ text: item.location, spacing: { after: 40 } }) : null,
         ...bullets(item.bullets)
-      ]),
+      ])
+    ];
 
-      resume.projects.length ? heading("Projects") : null,
+    const projectChildren = [
+      resume.projects.length ? heading(docLabels.projects) : null,
       ...resume.projects.flatMap((item) => [
         new Paragraph({
           children: [
@@ -581,7 +637,30 @@ export default function Preview({ result, onChange }) {
           spacing: { after: 40 }
         }),
         ...bullets(item.bullets)
-      ]),
+      ])
+    ];
+
+    const children = [
+      new Paragraph({
+        children: [new TextRun({ text: resume.fullName || "Your Name", bold: true, size: 34 })],
+        spacing: { after: 80 }
+      }),
+      contactLine ? new Paragraph({ text: contactLine, spacing: { after: 120 } }) : null,
+      resume.title
+        ? new Paragraph({
+            children: [new TextRun({ text: resume.title, italics: true })],
+            spacing: { after: 200 }
+          })
+        : null,
+
+      resume.summary ? heading(docLabels.summary) : null,
+      resume.summary ? new Paragraph({ text: resume.summary }) : null,
+
+      resume.skills.length ? heading(docLabels.skills) : null,
+      resume.skills.length ? new Paragraph({ text: resume.skills.join(", ") }) : null,
+
+      ...(isFresherDoc ? projectChildren : experienceChildren),
+      ...(isFresherDoc ? experienceChildren : projectChildren),
 
       resume.education.length ? heading("Education") : null,
       ...resume.education.map(
@@ -599,11 +678,11 @@ export default function Preview({ result, onChange }) {
       resume.certifications.length ? heading("Certifications") : null,
       ...bullets(resume.certifications),
 
-      resume.coursework.length ? heading("Relevant Coursework") : null,
-      resume.coursework.length ? new Paragraph({ text: resume.coursework.join(", ") }) : null,
-
       resume.achievements.length ? heading("Achievements") : null,
-      ...bullets(resume.achievements)
+      ...bullets(resume.achievements),
+
+      !isFresherDoc && resume.languages.length ? heading("Languages") : null,
+      !isFresherDoc && resume.languages.length ? new Paragraph({ text: resume.languages.join(", ") }) : null
     ].filter(Boolean);
 
     const doc = new Document({
@@ -634,16 +713,6 @@ export default function Preview({ result, onChange }) {
     saveBlob(blob, `${safeName}_Resume.docx`);
   };
 
-  const triggerEmailShare = () => {
-    const email = resume.contact.email || "";
-    const name = resume.fullName || "there";
-    const subject = encodeURIComponent("Your AI-optimized resume is ready — ResumeAlignAI");
-    const body = encodeURIComponent(
-      `Hi ${name},\n\nYour AI-optimized resume has been downloaded successfully.\n\nNext steps:\n1. Attach the downloaded file to this email and send a copy to yourself for safekeeping.\n2. Verify all details one more time before applying.\n3. Check that your ATS score is above 75% for competitive roles.\n\nGood luck with your applications!\n\n— ResumeAlignAI Team`
-    );
-    window.open(`mailto:${email}?subject=${subject}&body=${body}`, "_blank");
-  };
-
   const runDownload = async () => {
     const source = exportRef.current || previewRef.current;
 
@@ -659,8 +728,6 @@ export default function Preview({ result, onChange }) {
       doc.text(lines, 14, 14);
       doc.save("resume.pdf");
     }
-
-    setTimeout(triggerEmailShare, 800);
   };
 
   const download = () => {
@@ -670,22 +737,419 @@ export default function Preview({ result, onChange }) {
 
   const confirmDownload = async () => {
     setShowWarning(false);
+    const valid = await restorePaymentToken(paymentScope);
+    if (!valid) {
+      setPaid(false);
+      setPaymentError("Payment verification failed. Please complete payment again.");
+      return;
+    }
+    const tokenPayload = getPaymentTokenPayload();
     await runDownload();
+    let downloadLogged = true;
+    try {
+      if (tokenPayload) {
+        const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+        const response = await fetch(`${API}/payment/download`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...tokenPayload,
+            fileFormat: downloadFormat
+          }),
+          keepalive: true
+        });
+        if (!response.ok) throw new Error(`download log failed (${response.status})`);
+      }
+    } catch (err) {
+      downloadLogged = false;
+      console.warn("[downloadLog] Could not record download:", err.message);
+    }
+    clearPaymentToken(paymentScope);
+    setPaid(false);
+    setPaymentError(
+      downloadLogged
+        ? "Download completed. This payment unlock was used for one download."
+        : "Download completed, but admin tracking was not recorded. Please restart the app and contact support if this repeats."
+    );
+  };
+
+  const generateAndEmailFiles = async (emailOverride) => {
+    const targetEmail = emailOverride || userEmail;
+    if (!targetEmail) return;
+    setFileEmailStatus("sending");
+    const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+    try {
+      // ── PDF as base64 ──
+      let pdfBase64 = null;
+      const source = exportRef.current || previewRef.current;
+      if (source) {
+        const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+          import("html2canvas"),
+          import("jspdf")
+        ]);
+        const canvas = await html2canvas(source, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+          width: source.scrollWidth,
+          height: source.scrollHeight,
+          windowWidth: 794,
+          windowHeight: source.scrollHeight
+        });
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4", compress: true });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgHeight = (canvas.height * pageWidth) / canvas.width;
+        let y = 0;
+        let remaining = imgHeight;
+        while (remaining > 0) {
+          pdf.addImage(imgData, "PNG", 0, y, pageWidth, imgHeight);
+          remaining -= pageHeight;
+          if (remaining > 0) { pdf.addPage(); y -= pageHeight; }
+        }
+        pdfBase64 = pdf.output("datauristring").split(",")[1];
+      }
+
+      // ── DOCX as base64 ──
+      let docxBase64 = null;
+      try {
+        const { Document, HeadingLevel, Packer, Paragraph, TextRun } = await import("docx");
+        const isFresherDoc = String(resume.candidateType || "").toLowerCase() === "fresher";
+        const docLabels = {
+          summary: isFresherDoc ? "Career Objective" : "Professional Summary",
+          skills: isFresherDoc ? "Technical Skills" : "Key Skills",
+          experience: isFresherDoc ? "Internship / Training" : "Work Experience",
+          projects: isFresherDoc ? "Academic Projects" : "Projects"
+        };
+        const contactLine = [resume.contact.phone, resume.contact.email, resume.contact.linkedin, resume.contact.location, resume.contact.portfolio].filter(Boolean).join(" | ");
+        const heading = (text) => new Paragraph({ text, heading: HeadingLevel.HEADING_2, spacing: { before: 220, after: 80 } });
+        const bullets = (lines) => (lines || []).filter(Boolean).map((line) => new Paragraph({ children: [new TextRun({ text: line })], bullet: { level: 0 } }));
+        const expChildren = [
+          resume.experience.length ? heading(docLabels.experience) : null,
+          ...resume.experience.flatMap((item) => [
+            new Paragraph({ children: [new TextRun({ text: item.role || "Role", bold: true }), new TextRun({ text: item.company ? ` | ${item.company}` : "" }), new TextRun({ text: item.duration ? ` | ${item.duration}` : "" })].filter(r => r.text !== ""), spacing: { after: 40 } }),
+            item.location ? new Paragraph({ text: item.location, spacing: { after: 40 } }) : null,
+            ...bullets(item.bullets)
+          ])
+        ];
+        const projChildren = [
+          resume.projects.length ? heading(docLabels.projects) : null,
+          ...resume.projects.flatMap((item) => [
+            new Paragraph({ children: [new TextRun({ text: item.name || "Project", bold: true }), new TextRun({ text: item.subtitle ? ` | ${item.subtitle}` : "" })], spacing: { after: 40 } }),
+            ...bullets(item.bullets)
+          ])
+        ];
+        const children = [
+          new Paragraph({ children: [new TextRun({ text: resume.fullName || "Your Name", bold: true, size: 34 })], spacing: { after: 80 } }),
+          contactLine ? new Paragraph({ text: contactLine, spacing: { after: 120 } }) : null,
+          resume.title ? new Paragraph({ children: [new TextRun({ text: resume.title, italics: true })], spacing: { after: 200 } }) : null,
+          resume.summary ? heading(docLabels.summary) : null,
+          resume.summary ? new Paragraph({ text: resume.summary }) : null,
+          resume.skills.length ? heading(docLabels.skills) : null,
+          resume.skills.length ? new Paragraph({ text: resume.skills.join(", ") }) : null,
+          ...(isFresherDoc ? projChildren : expChildren),
+          ...(isFresherDoc ? expChildren : projChildren),
+          resume.education.length ? heading("Education") : null,
+          ...resume.education.map((item) => new Paragraph({ children: [new TextRun({ text: item.degree || "Degree", bold: true }), new TextRun({ text: item.institution ? ` | ${item.institution}` : "" }), new TextRun({ text: item.duration ? ` | ${item.duration}` : "" })], spacing: { after: 40 } })),
+          resume.certifications.length ? heading("Certifications") : null,
+          ...bullets(resume.certifications),
+          resume.achievements.length ? heading("Achievements") : null,
+          ...bullets(resume.achievements)
+        ].filter(Boolean);
+        const doc = new Document({ sections: [{ properties: { page: { size: { orientation: "portrait", width: 11906, height: 16838 }, margin: { top: 720, right: 720, bottom: 720, left: 720 } } }, children }] });
+        docxBase64 = await Packer.toBase64String(doc);
+      } catch (docxErr) {
+        console.warn("[emailFiles] DOCX generation failed:", docxErr.message);
+      }
+
+      const { default: axios } = await import("axios");
+      await axios.post(`${API}/payment/email-attachments`, {
+        name: userName,
+        email: targetEmail,
+        resumeTitle: resume.title,
+        pdfBase64,
+        docxBase64,
+        userId,
+        resumeId
+      });
+
+      setFileEmailStatus("sent");
+    } catch (err) {
+      console.error("[emailFiles] Failed:", err.message);
+      setFileEmailStatus("failed");
+    }
   };
 
   const startPayment = async () => {
     setPaymentError("");
     await payNow(
-      () => setPaid(true),
+      { userId, resumeId, paymentScope, userName, userEmail, resumeTitle: resume.title, resumeData: result },
+      () => {
+        setPaid(true);
+        if (userEmail) setShowEmailWarning(true);
+      },
       (message) => setPaymentError(message)
     );
   };
 
+  const emailModalPortal = !viewOnly && typeof document !== "undefined"
+    ? createPortal(
+        <AnimatePresence>
+          {showEmailWarning && (
+            <motion.div
+              className="modal-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={(e) => { if (e.target === e.currentTarget) setShowEmailWarning(false); }}
+            >
+              <motion.div
+                className="modal-box email-delivery-modal"
+                initial={{ opacity: 0, scale: 0.92, y: 24 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 24 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="modal-header email-delivery-header">
+                  <span className="email-delivery-icon">
+                    <Mail size={21} />
+                  </span>
+                  <div>
+                    <h3>Send resume files to your email?</h3>
+                    <p>Get both formats delivered to your inbox.</p>
+                  </div>
+                  <button className="modal-close" onClick={() => setShowEmailWarning(false)}>
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <p className="modal-intro">
+                  We'll generate your resume as <strong>PDF</strong> and <strong>DOCX</strong> files and send them to:
+                </p>
+
+                {userEmail ? (
+                  <div className="email-confirm-address">
+                    <Mail size={14} />
+                    <span>{userEmail}</span>
+                  </div>
+                ) : (
+                  <input
+                    className="email-confirm-input"
+                    type="email"
+                    placeholder="Enter your email address"
+                    id="email-warning-input"
+                  />
+                )}
+
+                <div className="email-delivery-note">
+                  <span>Both files usually arrive within a minute.</span>
+                  <span>The download button remains available on this page too.</span>
+                </div>
+
+                <div className="modal-actions email-delivery-actions">
+                  <button
+                    className="modal-back"
+                    onClick={() => setShowEmailWarning(false)}
+                  >
+                    Skip, I'll download instead
+                  </button>
+                  <button
+                    className="modal-confirm"
+                    onClick={() => {
+                      const emailInput = document.getElementById("email-warning-input");
+                      const emailToUse = userEmail || emailInput?.value?.trim();
+                      if (!emailToUse) {
+                        if (emailInput) emailInput.focus();
+                        return;
+                      }
+                      setShowEmailWarning(false);
+                      generateAndEmailFiles(emailToUse);
+                    }}
+                  >
+                    <Mail size={16} />
+                    Yes, send to my email
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )
+    : null;
+
+  const downloadModalPortal = !viewOnly && typeof document !== "undefined"
+    ? createPortal(
+        <AnimatePresence>
+          {showWarning && (
+            <motion.div
+              className="modal-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={(e) => { if (e.target === e.currentTarget) setShowWarning(false); }}
+            >
+              <motion.div
+                className="modal-box"
+                initial={{ opacity: 0, scale: 0.92, y: 24 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 24 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="modal-header">
+                  <AlertTriangle size={20} className="modal-warn-icon" />
+                  <h3>Verify before downloading</h3>
+                  <button className="modal-close" onClick={() => setShowWarning(false)}>
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <p className="modal-intro">Please confirm the accuracy of your resume content before downloading.</p>
+
+                <p className="modal-section-label">Resume accuracy checklist</p>
+                <div className="modal-checklist">
+                  {resumeVerifyChecks.map((item, i) => (
+                    <label key={i} className="modal-check-item">
+                      <input
+                        type="checkbox"
+                        checked={warningChecked[i]}
+                        onChange={() =>
+                          setWarningChecked((prev) => prev.map((v, idx) => (idx === i ? !v : v)))
+                        }
+                      />
+                      <span>{item}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <p className="modal-section-label ats-label">
+                  <AlertTriangle size={14} /> ATS warnings to keep in mind
+                </p>
+                <div className="modal-ats-list">
+                  {atsWarningItems.map((item, i) => (
+                    <div key={i} className="modal-ats-item">
+                      <span className="ats-bullet">!</span>
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="modal-actions">
+                  <button className="modal-back" onClick={() => setShowWarning(false)}>
+                    Go back &amp; edit
+                  </button>
+                  <button
+                    className="modal-confirm"
+                    onClick={confirmDownload}
+                  >
+                    <Download size={16} />
+                    Confirm &amp; Download
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )
+    : null;
+
   return (
-    <div className="preview">
+    <div className={`preview${viewOnly ? " preview-view-only" : ""}`}>
+      {/* ── Email confirmation modal ── */}
+      {emailModalPortal}
+      {downloadModalPortal}
+      {false && !viewOnly && (
+        <AnimatePresence>
+          {showEmailWarning && (
+            <motion.div
+              className="modal-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={(e) => { if (e.target === e.currentTarget) setShowEmailWarning(false); }}
+            >
+              <motion.div
+                className="modal-box email-delivery-modal"
+                initial={{ opacity: 0, scale: 0.92, y: 24 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 24 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="modal-header email-delivery-header">
+                  <span className="email-delivery-icon">
+                    <Mail size={21} />
+                  </span>
+                  <div>
+                    <h3>Send resume files to your email?</h3>
+                    <p>Get both formats delivered to your inbox.</p>
+                  </div>
+                  <button className="modal-close" onClick={() => setShowEmailWarning(false)}>
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <p className="modal-intro">
+                  We'll generate your resume as <strong>PDF</strong> and <strong>DOCX</strong> files and send them to:
+                </p>
+
+                {userEmail ? (
+                  <div className="email-confirm-address">
+                    <Mail size={14} />
+                    <span>{userEmail}</span>
+                  </div>
+                ) : (
+                  <input
+                    className="email-confirm-input"
+                    type="email"
+                    placeholder="Enter your email address"
+                    id="email-warning-input"
+                  />
+                )}
+
+                <div className="email-delivery-note">
+                  <span>Both files usually arrive within a minute.</span>
+                  <span>The download button remains available on this page too.</span>
+                </div>
+
+                <div className="modal-actions email-delivery-actions">
+                  <button
+                    className="modal-back"
+                    onClick={() => setShowEmailWarning(false)}
+                  >
+                    Skip, I'll download instead
+                  </button>
+                  <button
+                    className="modal-confirm"
+                    onClick={() => {
+                      const emailInput = document.getElementById("email-warning-input");
+                      const emailToUse = userEmail || emailInput?.value?.trim();
+                      if (!emailToUse) {
+                        if (emailInput) emailInput.focus();
+                        return;
+                      }
+                      setShowEmailWarning(false);
+                      generateAndEmailFiles(emailToUse);
+                    }}
+                  >
+                    <Mail size={16} />
+                    Yes, send to my email
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
+
       {/* ── Pre-download warning modal ── */}
-      <AnimatePresence>
-        {showWarning && (
+      {false && !viewOnly && (
+        <AnimatePresence>
+          {showWarning && (
           <motion.div
             className="modal-overlay"
             initial={{ opacity: 0 }}
@@ -758,81 +1222,117 @@ export default function Preview({ result, onChange }) {
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+        </AnimatePresence>
+      )}
 
-      <div className="preview-header generated-header">
-        <div>
-          <h2>Generated Resume</h2>
-          <p className="generated-copy">
-            Review the completed resume below, switch templates, and then edit any section you want.
-          </p>
-        </div>
-        {checkingPayment ? null : !paid ? (
-          <button className="pay-button" onClick={startPayment}>
-            <LockKeyhole aria-hidden="true" />
-            Pay Rs.69
-          </button>
-        ) : (
-          <div className="download-group">
-            <label className="download-format">
-              <span className="sr-only">Download format</span>
-              <select value={downloadFormat} onChange={(e) => setDownloadFormat(e.target.value)}>
-                <option value="pdf">PDF</option>
-                <option value="docx">DOCX</option>
-              </select>
-            </label>
-            {downloadFormat === "docx" && (
-              <span className="docx-note" title="Word export uses a clean plain-text layout — it does not replicate the visual template design shown in the preview.">
-                ⚠ Plain layout
-              </span>
+      {!viewOnly && (
+        <>
+          <div className="preview-header generated-header">
+            <div>
+              <h2>Generated Resume</h2>
+              <p className="generated-copy">
+                Review the completed resume below, switch templates, and then edit any section you want.
+              </p>
+            </div>
+            {checkingPayment ? null : !paid ? (
+              <button className="pay-button" onClick={startPayment}>
+                <LockKeyhole aria-hidden="true" />
+                Pay Rs.69
+              </button>
+            ) : (
+              <div className="download-group">
+                <label className="download-format">
+                  <span className="sr-only">Download format</span>
+                  <select value={downloadFormat} onChange={(e) => setDownloadFormat(e.target.value)}>
+                    <option value="pdf">PDF</option>
+                    <option value="docx">DOCX</option>
+                  </select>
+                </label>
+                {downloadFormat === "docx" && (
+                  <span className="docx-note" title="Word export uses a clean plain-text layout — it does not replicate the visual template design shown in the preview.">
+                    ⚠ Plain layout
+                  </span>
+                )}
+                <button className="download-button" onClick={download}>
+                  <Download aria-hidden="true" />
+                  Download {downloadFormat.toUpperCase()}
+                </button>
+                {fileEmailStatus !== "sending" && fileEmailStatus !== "sent" && (
+                  <button
+                    className="email-send-button"
+                    onClick={() => setShowEmailWarning(true)}
+                    title="Send PDF & DOCX to your email"
+                  >
+                    <Mail size={15} aria-hidden="true" />
+                    Send to Email
+                  </button>
+                )}
+                {fileEmailStatus === "sent" && (
+                  <span className="email-sent-badge">
+                    <CheckCircle2 size={14} /> Sent
+                  </span>
+                )}
+              </div>
             )}
-            <button className="download-button" onClick={download}>
-              <Download aria-hidden="true" />
-              Download {downloadFormat.toUpperCase()}
-            </button>
           </div>
-        )}
-      </div>
 
-      {paymentError && <p className="error">{paymentError}</p>}
+          {paymentError && <p className="error">{paymentError}</p>}
 
-      {(resume.verification.status || resume.atsStrategy.insertedKeywords.length > 0) && (
-        <div className="ai-verification-panel">
-          <div>
-            <strong>AI Verification</strong>
-            <p>{resume.verification.status || "Generated lines were checked for clarity, truthfulness, and ATS fit."}</p>
-          </div>
-          {resume.verification.checkedLines > 0 && (
-            <span>{resume.verification.checkedLines} lines checked</span>
+          {fileEmailStatus === "sending" && (
+            <p className="file-email-status sending">
+              ⏳ Generating your PDF &amp; DOCX and sending to {userEmail}…
+            </p>
           )}
-          {resume.atsStrategy.insertedKeywords.length > 0 && (
-            <div className="verification-keywords">
-              {resume.atsStrategy.insertedKeywords.slice(0, 10).map((keyword) => (
-                <em key={keyword}>{keyword}</em>
-              ))}
+          {fileEmailStatus === "sent" && (
+            <p className="file-email-status sent">
+              ✅ Resume PDF &amp; DOCX sent to {userEmail} — check your inbox!
+            </p>
+          )}
+          {fileEmailStatus === "failed" && (
+            <p className="file-email-status failed">
+              ⚠ Could not send files to email. Please use the Download button above.
+            </p>
+          )}
+
+          {(resume.verification.status || resume.atsStrategy.insertedKeywords.length > 0) && (
+            <div className="ai-verification-panel">
+              <div>
+                <strong>AI Verification</strong>
+                <p>{resume.verification.status || "Generated lines were checked for clarity, truthfulness, and ATS fit."}</p>
+              </div>
+              {resume.verification.checkedLines > 0 && (
+                <span>{resume.verification.checkedLines} lines checked</span>
+              )}
+              {resume.atsStrategy.insertedKeywords.length > 0 && (
+                <div className="verification-keywords">
+                  {resume.atsStrategy.insertedKeywords.slice(0, 10).map((keyword) => (
+                    <em key={keyword}>{keyword}</em>
+                  ))}
+                </div>
+              )}
+              {resume.verification.lineChecks.length > 0 && (
+                <details className="line-checks">
+                  <summary>View line checks</summary>
+                  <ul>
+                    {resume.verification.lineChecks.slice(0, 8).map((item, index) => (
+                      <li key={`${item.section}-${index}`}>
+                        <b>{item.section || "Resume"}</b>
+                        <span>{item.result}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
             </div>
           )}
-          {resume.verification.lineChecks.length > 0 && (
-            <details className="line-checks">
-              <summary>View line checks</summary>
-              <ul>
-                {resume.verification.lineChecks.slice(0, 8).map((item, index) => (
-                  <li key={`${item.section}-${index}`}>
-                    <b>{item.section || "Resume"}</b>
-                    <span>{item.result}</span>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </div>
+        </>
       )}
 
       <div className="template-toolbar">
         <div className="toolbar-copy">
           <Palette aria-hidden="true" />
           <div>
-            <strong>{templateCatalog.length} templates - 7 distinct layouts</strong>
+            <strong>{templateCatalog.length} templates - {layoutCount} distinct layouts</strong>
             <p>Switch designs to change the full look and feel, not just colours.</p>
           </div>
         </div>
@@ -854,7 +1354,15 @@ export default function Preview({ result, onChange }) {
         </div>
       </div>
 
-      <div className="preview-stage" ref={stageRef}>
+      <div
+        className="preview-stage"
+        ref={stageRef}
+        onContextMenu={blockPreviewCopy}
+        onCopy={blockPreviewCopy}
+        onCut={blockPreviewCopy}
+        onDragStart={blockPreviewCopy}
+        onSelectStart={blockPreviewCopy}
+      >
         <div
           className="preview-scale-wrap"
           style={
@@ -872,7 +1380,7 @@ export default function Preview({ result, onChange }) {
         </div>
       </div>
 
-      <div className="resume-editor">
+      {!viewOnly && <div className="resume-editor">
           <div className="editor-title">
             <FileEdit aria-hidden="true" />
             <div>
@@ -890,11 +1398,11 @@ export default function Preview({ result, onChange }) {
             <input value={resume.title} onChange={(event) => updateField("title", event.target.value)} />
           </label>
           <label>
-            Summary
+            {editorLabels.summary}
             <textarea value={resume.summary} onChange={(event) => updateField("summary", event.target.value)} />
           </label>
           <label>
-            Skills
+            {editorLabels.skills}
             <textarea value={joinList(resume.skills)} onChange={(event) => updateArrayField("skills", event.target.value)} />
           </label>
           <label>
@@ -918,6 +1426,15 @@ export default function Preview({ result, onChange }) {
               onChange={(event) => updateArrayField("achievements", event.target.value)}
             />
           </label>
+          {!isFresherResume && (
+            <label>
+              Languages
+              <textarea
+                value={joinList(resume.languages)}
+                onChange={(event) => updateArrayField("languages", event.target.value)}
+              />
+            </label>
+          )}
           <div className="editor-inline-grid">
             <label>
               Email
@@ -942,16 +1459,16 @@ export default function Preview({ result, onChange }) {
           </div>
 
           <div className="editor-section-head">
-            <strong>Experience</strong>
+            <strong>{editorLabels.experience}</strong>
             <button className="mini-action" onClick={() => addSectionItem("experience")}>
               <Plus aria-hidden="true" />
-              Add Experience
+              Add {isFresherResume ? "Training" : "Experience"}
             </button>
           </div>
           {resume.experience.map((item, index) => (
             <div className="editor-block" key={`experience-${index}`}>
               <div className="editor-block-head">
-                <strong>Experience {index + 1}</strong>
+                <strong>{editorLabels.experience} {index + 1}</strong>
                 <button className="mini-danger" onClick={() => removeSectionItem("experience", index)}>
                   <Trash2 aria-hidden="true" />
                   Remove
@@ -984,7 +1501,7 @@ export default function Preview({ result, onChange }) {
           ))}
 
           <div className="editor-section-head">
-            <strong>Projects</strong>
+            <strong>{editorLabels.projects}</strong>
             <button className="mini-action" onClick={() => addSectionItem("projects")}>
               <Plus aria-hidden="true" />
               Add Project
@@ -1054,11 +1571,11 @@ export default function Preview({ result, onChange }) {
               </label>
             </div>
           ))}
-      </div>
+      </div>}
 
-      <div className="resume-export-stage" aria-hidden="true">
+      {!viewOnly && <div className="resume-export-stage" aria-hidden="true">
         <ResumeDocument resume={resume} selectedTemplate={selectedTemplate} resumeRef={exportRef} exportMode />
-      </div>
+      </div>}
     </div>
   );
 }
