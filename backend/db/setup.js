@@ -3,14 +3,16 @@ import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_PATH = process.env.DATABASE_PATH || resolve(__dirname, "../database.sqlite");
 
 let db;
 
 export const getDb = () => {
   if (db) return db;
 
-  db = new Database(DB_PATH);
+  // Resolve lazily so DATABASE_PATH is read after env loading is complete
+  const dbPath = process.env.DATABASE_PATH || resolve(__dirname, "../database.sqlite");
+
+  db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
   createTables(db);

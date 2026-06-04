@@ -10,12 +10,13 @@ import {
 } from "../controllers/resumeController.js";
 import {
   createPaymentOrder,
+  getPaymentQuote,
   verifyPayment,
   checkPaymentToken,
   recordResumeDownload,
   emailResumeAttachments
 } from "../controllers/paymentController.js";
-import { adminOverview, adminSendResume, requireAdmin } from "../controllers/adminController.js";
+import { adminDeleteUserData, adminOverview, adminSendResume, requireAdmin } from "../controllers/adminController.js";
 
 const router = express.Router();
 
@@ -37,6 +38,7 @@ router.post("/upload", upload.single("resume"), uploadResume);
 router.post("/ats", atsScore);
 router.post("/suggest", suggestKeywords);
 router.post("/improve", improveResume);
+router.post("/payment/quote", getPaymentQuote);
 router.post("/payment/order", createPaymentOrder);
 router.post("/payment/verify", verifyPayment);
 router.post("/payment/check", checkPaymentToken);
@@ -44,5 +46,6 @@ router.post("/payment/download", recordResumeDownload);
 router.post("/payment/email-attachments", emailResumeAttachments);
 router.get("/admin/overview", requireAdmin, adminOverview);
 router.post("/admin/resumes/:resumeId/send", requireAdmin, adminSendResume);
+router.post("/admin/users/delete-by-email", requireAdmin, adminDeleteUserData);
 
 export default router;

@@ -1,13 +1,12 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
 import resumeRoutes from "./routes/resumeRoutes.js";
 import { getDb } from "./db/setup.js";
+import { verifyEmailTransport } from "./services/emailService.js";
 
-dotenv.config({ path: "../.env" });
-dotenv.config();
+// Env is loaded via `node --env-file=.env` in package.json scripts.
 
 // Fail fast in production if required env vars are missing
 const validateProductionEnv = () => {
@@ -29,7 +28,7 @@ const validateProductionEnv = () => {
     errors.push("At least one AI key is required: DEEPSEEK_API_KEY, GROQ_API_KEY, or ANTHROPIC_API_KEY");
 
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS)
-    console.warn("[startup] WARNING: EMAIL_USER/EMAIL_PASS not set — payment confirmation emails will not be sent");
+    errors.push("EMAIL_USER and EMAIL_PASS are required for payment confirmation emails");
 
   if (errors.length > 0) {
     console.error("\n[startup] Missing required environment variables:");
@@ -49,6 +48,16 @@ try {
   console.log("[db] SQLite database ready.");
 } catch (err) {
   console.error("[db] Database init failed:", err.message);
+}
+
+// In production, verify SMTP transport at startup so misconfigured creds surface immediately
+if (process.env.NODE_ENV === "production") {
+  verifyEmailTransport()
+    .then(() => console.log("[email] SMTP transport verified."))
+    .catch((err) => {
+      console.error("[email] SMTP verify failed at startup:", err.message);
+      process.exit(1);
+    });
 }
 
 const app = express();

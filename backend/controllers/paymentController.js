@@ -4,15 +4,33 @@ import {
   createDownloadLog,
   createEmailLog,
   createPayment,
+  getDownloadByPaymentId,
   getPaymentByOrderId,
+  getSuccessfulPaymentCountByEmail,
   updateEmailStatus,
+  updatePaymentFailed,
   updatePaymentSuccess,
   updateResumeStatus
 } from "../db/queries.js";
-import { sendResumeWithAttachments } from "../services/emailService.js";
+import { sendPaymentConfirmation, sendResumeWithAttachments } from "../services/emailService.js";
 
 const RAZORPAY_ORDERS_URL = "https://api.razorpay.com/v1/orders";
-const PAYMENT_AMOUNT = 6900;
+const BASE_PAYMENT_AMOUNT = 6900;            // Rs.69 first-resume price
+const RETURNING_DISCOUNT_AMOUNT = 5000;       // Rs.50 off subsequent resumes
+const RETURNING_PAYMENT_AMOUNT = BASE_PAYMENT_AMOUNT - RETURNING_DISCOUNT_AMOUNT;
+
+// Server-authoritative price lookup. Never trust a client-supplied amount.
+const resolvePricing = (email) => {
+  const successCount = getSuccessfulPaymentCountByEmail(email);
+  const isReturning = successCount > 0;
+  return {
+    isReturning,
+    amount: isReturning ? RETURNING_PAYMENT_AMOUNT : BASE_PAYMENT_AMOUNT,
+    originalAmount: BASE_PAYMENT_AMOUNT,
+    discountAmount: isReturning ? RETURNING_DISCOUNT_AMOUNT : 0,
+    previousPayments: successCount
+  };
+};
 
 const getRazorpayConfig = () => {
   const keyId = process.env.RAZORPAY_KEY_ID;
@@ -39,14 +57,41 @@ const isAccessTokenMatch = (expected, received) => {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
 
+const safeCompareHex = (expected, received) => {
+  const a = Buffer.from(String(expected || ""), "hex");
+  const b = Buffer.from(String(received || ""), "hex");
+  return a.length > 0 && a.length === b.length && crypto.timingSafeEqual(a, b);
+};
+
+export const getPaymentQuote = (req, res) => {
+  try {
+    const email = String(req.body?.userEmail || req.body?.email || "").trim();
+    const pricing = resolvePricing(email);
+    return res.json(pricing);
+  } catch (err) {
+    console.error("[getPaymentQuote]", err.message);
+    // Fall back to base price so the UI can still proceed
+    return res.json({
+      isReturning: false,
+      amount: BASE_PAYMENT_AMOUNT,
+      originalAmount: BASE_PAYMENT_AMOUNT,
+      discountAmount: 0,
+      previousPayments: 0
+    });
+  }
+};
+
 export const createPaymentOrder = async (req, res) => {
   try {
     const { keyId, keySecret } = getRazorpayConfig();
-    const { userId, resumeId } = req.body;
+    const { userId, resumeId, userEmail } = req.body;
+
+    // Server-authoritative pricing — client cannot override the amount.
+    const pricing = resolvePricing(userEmail);
 
     const response = await axios.post(
       RAZORPAY_ORDERS_URL,
-      { amount: PAYMENT_AMOUNT, currency: "INR", receipt: `resume_${Date.now()}` },
+      { amount: pricing.amount, currency: "INR", receipt: `resume_${Date.now()}` },
       { auth: { username: keyId, password: keySecret }, proxy: false }
     );
 
@@ -54,12 +99,20 @@ export const createPaymentOrder = async (req, res) => {
 
     // Save pending payment record
     try {
-      createPayment({ userId, resumeId, razorpayOrderId, amount: PAYMENT_AMOUNT });
+      createPayment({ userId, resumeId, razorpayOrderId, amount: pricing.amount });
     } catch (dbErr) {
       console.error("[createPaymentOrder] DB save failed:", dbErr.message);
     }
 
-    return res.json({ keyId, orderId: razorpayOrderId, amount, currency });
+    return res.json({
+      keyId,
+      orderId: razorpayOrderId,
+      amount,
+      currency,
+      isReturning: pricing.isReturning,
+      discountAmount: pricing.discountAmount,
+      originalAmount: pricing.originalAmount
+    });
   } catch (err) {
     console.error("[createPaymentOrder]", err.message);
     return res.status(500).json({
@@ -92,7 +145,8 @@ export const verifyPayment = async (req, res) => {
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
 
-    if (expectedSignature !== razorpay_signature) {
+    if (!safeCompareHex(expectedSignature, razorpay_signature)) {
+      try { updatePaymentFailed(razorpay_order_id); } catch (_) {}
       return res.status(400).json({ error: "Payment verification failed." });
     }
 
@@ -101,6 +155,29 @@ export const verifyPayment = async (req, res) => {
       updatePaymentSuccess({ razorpayOrderId: razorpay_order_id, razorpayPaymentId: razorpay_payment_id });
     } catch (dbErr) {
       console.error("[verifyPayment] DB update failed:", dbErr.message);
+    }
+
+    // Look up the actual amount paid (may be discounted for returning customers)
+    const paidRow = getPaymentByOrderId(razorpay_order_id);
+    const amountPaid = paidRow?.amount || BASE_PAYMENT_AMOUNT;
+
+    // Fire-and-forget confirmation email (do not block payment response)
+    if (userEmail) {
+      sendPaymentConfirmation({
+        name: userName,
+        email: userEmail,
+        resumeTitle,
+        amount: amountPaid,
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id
+      }).then((result) => {
+        try {
+          const emailId = createEmailLog({ userId, resumeId, emailType: "payment_confirmation" });
+          updateEmailStatus({ emailId, status: result.sent ? "sent" : "failed" });
+        } catch (_) {}
+      }).catch((emailErr) => {
+        console.error("[verifyPayment] confirmation email error:", emailErr.message);
+      });
     }
 
     const accessToken = makeAccessToken(razorpay_order_id, razorpay_payment_id, resumeId);
@@ -119,7 +196,7 @@ export const verifyPayment = async (req, res) => {
 
 export const emailResumeAttachments = async (req, res) => {
   try {
-    const { name, email, resumeTitle, pdfBase64, docxBase64, userId, resumeId } = req.body;
+    const { name, email, resumeTitle, pdfBase64, docxBase64, userId, resumeId, orderId } = req.body;
     if (!email) return res.status(400).json({ error: "Email is required." });
     if (!pdfBase64 && !docxBase64) return res.status(400).json({ error: "No file data provided." });
 
@@ -128,8 +205,17 @@ export const emailResumeAttachments = async (req, res) => {
       emailId = createEmailLog({ userId, resumeId, emailType: "payment_confirmation_with_files" });
     } catch {}
 
+    // Use the actual amount the customer paid (may be discounted) when available.
+    let amountPaid = BASE_PAYMENT_AMOUNT;
+    if (orderId) {
+      try {
+        const row = getPaymentByOrderId(orderId);
+        if (row?.amount) amountPaid = row.amount;
+      } catch {}
+    }
+
     const result = await sendResumeWithAttachments({
-      name, email, resumeTitle, pdfBase64, docxBase64, amount: PAYMENT_AMOUNT
+      name, email, resumeTitle, pdfBase64, docxBase64, amount: amountPaid
     });
 
     if (emailId) {
@@ -170,6 +256,12 @@ export const recordResumeDownload = (req, res) => {
     const payment = getPaymentByOrderId(orderId);
     if (!payment || payment.status !== "success") {
       return res.status(403).json({ recorded: false, error: "Payment is not successful." });
+    }
+
+    // One payment = one tracked download. Reject replays of the same token.
+    const existing = getDownloadByPaymentId(paymentId);
+    if (existing) {
+      return res.status(403).json({ recorded: false, error: "This download token has already been used." });
     }
 
     createDownloadLog({

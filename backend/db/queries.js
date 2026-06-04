@@ -13,6 +13,32 @@ export const createUser = ({ name, email, phone }) => {
 export const getUserById = (id) =>
   getDb().prepare("SELECT * FROM users WHERE id = ?").get(id);
 
+export const getUsersByEmail = (email) =>
+  getDb().prepare("SELECT * FROM users WHERE LOWER(email) = LOWER(?)").all(email);
+
+// Deletes a user and every row referencing them, in a single transaction.
+// Returns a per-table count of deleted rows.
+export const deleteAllUserDataByEmail = (email) => {
+  const db = getDb();
+  const users = db.prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(?)").all(email);
+  if (users.length === 0) return { matchedUsers: 0 };
+
+  const userIds = users.map((u) => u.id);
+  const placeholders = userIds.map(() => "?").join(",");
+
+  const txn = db.transaction(() => {
+    const aiUsage   = db.prepare(`DELETE FROM ai_usage  WHERE user_id IN (${placeholders})`).run(...userIds).changes;
+    const downloads = db.prepare(`DELETE FROM downloads WHERE user_id IN (${placeholders})`).run(...userIds).changes;
+    const emails    = db.prepare(`DELETE FROM emails    WHERE user_id IN (${placeholders})`).run(...userIds).changes;
+    const payments  = db.prepare(`DELETE FROM payments  WHERE user_id IN (${placeholders})`).run(...userIds).changes;
+    const resumes   = db.prepare(`DELETE FROM resumes   WHERE user_id IN (${placeholders})`).run(...userIds).changes;
+    const usersDel  = db.prepare(`DELETE FROM users     WHERE id      IN (${placeholders})`).run(...userIds).changes;
+    return { aiUsage, downloads, emails, payments, resumes, users: usersDel };
+  });
+
+  return { matchedUsers: users.length, deleted: txn() };
+};
+
 /* ── resumes ── */
 
 export const createResume = ({ userId, resumeData, generatedContent, atsScore }) => {
@@ -101,6 +127,19 @@ export const getPaymentByOrderId = (razorpayOrderId) =>
     .prepare("SELECT * FROM payments WHERE razorpay_order_id = ?")
     .get(razorpayOrderId);
 
+export const getSuccessfulPaymentCountByEmail = (email) => {
+  if (!email) return 0;
+  const row = getDb()
+    .prepare(`
+      SELECT COUNT(*) AS count
+      FROM payments p
+      JOIN users u ON u.id = p.user_id
+      WHERE LOWER(u.email) = LOWER(?) AND p.status = 'success'
+    `)
+    .get(email);
+  return Number(row?.count || 0);
+};
+
 /* ── emails ── */
 
 export const createEmailLog = ({ userId, resumeId, emailType }) => {
@@ -129,6 +168,11 @@ export const createDownloadLog = ({ userId, resumeId, razorpayOrderId, razorpayP
     .run(userId || null, resumeId || null, razorpayOrderId || null, razorpayPaymentId || null, fileFormat || null);
   return result.lastInsertRowid;
 };
+
+export const getDownloadByPaymentId = (razorpayPaymentId) =>
+  getDb()
+    .prepare("SELECT * FROM downloads WHERE razorpay_payment_id = ? LIMIT 1")
+    .get(razorpayPaymentId);
 
 /* admin reporting */
 

@@ -216,6 +216,92 @@ export const sendAdminResumeCopy = async ({ name, email, resumeTitle, resumeData
   }
 };
 
+// ── Payment confirmation (no attachments) ───────────────────
+const buildConfirmationHtml = ({ name, resumeTitle, amountRs, paymentId }) => `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
+  <tr><td align="center">
+    <table cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;max-width:580px;width:100%;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+      <tr><td style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);padding:32px 40px;text-align:center;">
+        <div style="background:#fff;border-radius:10px;color:#0f766e;display:inline-block;font-size:18px;font-weight:800;height:44px;line-height:44px;width:44px;margin-bottom:14px;">R</div>
+        <h1 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 6px;">ResumeAlignAI Premium</h1>
+        <p style="color:rgba(255,255,255,0.88);font-size:14px;margin:0;">Payment confirmed — your resume is unlocked</p>
+      </td></tr>
+      <tr><td style="padding:36px 40px;">
+        <p style="color:#1e293b;font-size:16px;margin:0 0 16px;">Hi <strong>${name || "there"}</strong>,</p>
+        <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 22px;">
+          Thank you for your payment of <strong>Rs.${amountRs}</strong>. Your premium ATS-optimised resume for <strong>${resumeTitle || "your target role"}</strong> has been unlocked. Return to the ResumeAlignAI tab to download your PDF and DOCX files.
+        </p>
+
+        <div style="background:#f0fdf9;border:1px solid #99f6e4;border-radius:10px;padding:20px 24px;margin:0 0 22px;">
+          <p style="color:#0f766e;font-size:13px;font-weight:700;margin:0 0 10px;text-transform:uppercase;letter-spacing:0.05em;">Payment Summary</p>
+          <table cellpadding="0" cellspacing="0" style="width:100%;">
+            <tr>
+              <td style="color:#475569;font-size:14px;padding:3px 0;">Target Role</td>
+              <td style="color:#134e4a;font-size:14px;font-weight:600;text-align:right;">${resumeTitle || "Your Resume"}</td>
+            </tr>
+            <tr>
+              <td style="color:#475569;font-size:14px;padding:3px 0;">Amount Paid</td>
+              <td style="color:#134e4a;font-size:14px;font-weight:600;text-align:right;">Rs.${amountRs}</td>
+            </tr>
+            <tr>
+              <td style="color:#475569;font-size:14px;padding:3px 0;">Payment ID</td>
+              <td style="color:#134e4a;font-size:12px;font-family:monospace;text-align:right;">${paymentId || "—"}</td>
+            </tr>
+            <tr>
+              <td style="color:#475569;font-size:14px;padding:3px 0;">Status</td>
+              <td style="color:#0f766e;font-size:14px;font-weight:700;text-align:right;">&#10003; Confirmed</td>
+            </tr>
+          </table>
+        </div>
+
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 18px;">
+          If your session timed out before downloading, reply to this email with your payment ID and our support team will resend the files.
+        </p>
+
+        <p style="color:#94a3b8;font-size:13px;margin:0;line-height:1.6;">
+          Questions? Email
+          <a href="mailto:supportresumealign@gmail.com" style="color:#0f766e;text-decoration:none;">supportresumealign@gmail.com</a>
+        </p>
+      </td></tr>
+      <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 40px;text-align:center;">
+        <p style="color:#94a3b8;font-size:12px;margin:0;line-height:1.6;">&copy; 2026 ResumeAlignAI Premium</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+
+export const sendPaymentConfirmation = async ({ name, email, resumeTitle, amount, orderId, paymentId }) => {
+  if (!email) return { sent: false, reason: "no_email" };
+  try {
+    const transporter = await getTransporter();
+    const amountRs = Math.round((amount || 6900) / 100);
+
+    const info = await transporter.sendMail({
+      from: fromAddress(),
+      to: email,
+      subject: `Payment Confirmed - ResumeAlignAI Premium (Rs.${amountRs})`,
+      html: buildConfirmationHtml({ name, resumeTitle, amountRs, paymentId })
+    });
+    logSent(info, email);
+    return { sent: true };
+  } catch (err) {
+    console.error("[emailService] Payment confirmation failed:", err.message);
+    return { sent: false, reason: err.message };
+  }
+};
+
+export const verifyEmailTransport = async () => {
+  const transporter = await getTransporter();
+  await transporter.verify();
+  return true;
+};
+
 const buildAttachmentsHtml = ({ name, resumeTitle, amountRs }) => `
 <!DOCTYPE html>
 <html lang="en">

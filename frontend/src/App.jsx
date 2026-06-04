@@ -31,6 +31,7 @@ import {
 import Form from "./components/Form.jsx";
 import AdminPanel from "./components/AdminPanel.jsx";
 import Samples from "./components/Samples.jsx";
+import PrivacyPolicy from "./components/PrivacyPolicy.jsx";
 import { sampleResumes } from "./components/sampleResumes.js";
 
 const fadeUp = {
@@ -380,6 +381,7 @@ export default function App() {
   const isFresherBuilder = pathname === "/fresher-builder";
   const isSamplesPage = pathname === "/samples";
   const isAdminPage = pathname === "/admin";
+  const isPrivacyPage = pathname === "/privacy";
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -403,6 +405,10 @@ export default function App() {
     return <AdminPanel onBack={() => navigateTo("/", setPathname)} />;
   }
 
+  if (isPrivacyPage) {
+    return <PrivacyPolicy onBack={() => navigateTo("/", setPathname)} />;
+  }
+
   if (isBuilderPage) {
     return (
       <div className="builder-page">
@@ -418,7 +424,7 @@ export default function App() {
             >
               <span className="brand-mark">R</span>
               <div>
-                <p>ResumeAlignAI</p>
+                <p>ResumeAlignAI <span className="brand-premium-badge">Premium</span></p>
                 <span>{isFresherBuilder ? "Fresher workspace" : "Experienced workspace"}</span>
               </div>
             </button>
@@ -528,8 +534,8 @@ export default function App() {
           <div className="brand-lockup">
             <span className="brand-mark">R</span>
             <div>
-              <p>ResumeAlignAI</p>
-              <span>align your resume with role you apply</span>
+              <p>ResumeAlignAI <span className="brand-premium-badge">Premium</span></p>
+              <span>Premium AI resumes, aligned to your target role</span>
             </div>
           </div>
 
@@ -574,10 +580,10 @@ export default function App() {
         <div className="hero-grid">
           <div className="hero-copy">
             <motion.p className="hero-kicker" custom={0} variants={fadeUp}>
-              AI resume generation for modern job search
+              Premium AI resume crafting for serious job seekers
             </motion.p>
             <motion.h1 custom={1} variants={fadeUp}>
-              Build a sharper resume, prove the ATS fit, and export a client-ready PDF.
+              Craft a premium, ATS-aligned resume and export a recruiter-ready PDF in minutes.
             </motion.h1>
             <motion.p className="hero-text" custom={2} variants={fadeUp}>
               This product helps job seekers upload an old resume, add career details, match a target job
@@ -1250,7 +1256,7 @@ export default function App() {
             whileTap={{ scale: 0.97 }}
             onClick={() => navigateTo("/builder", setPathname)}
           >
-            Get 77% Off - Build My Resume <ArrowRight size={18} />
+            Unlock Premium Resume - 77% Off Today <ArrowRight size={18} />
           </motion.button>
 
           <p className="pricing-fine">
@@ -1341,6 +1347,33 @@ export default function App() {
           </div>
         </motion.div>
       </section>
+
+      <footer className="site-footer">
+        <div className="site-footer-inner">
+          <div className="site-footer-brand">
+            <span className="brand-mark">R</span>
+            <div>
+              <p>ResumeAlignAI <span className="brand-premium-badge">Premium</span></p>
+              <span>Premium AI resumes, aligned to your target role</span>
+            </div>
+          </div>
+          <nav className="site-footer-links">
+            <a href="#benefits">Benefits</a>
+            <a href="#features">Features</a>
+            <a href="#faq">FAQ</a>
+            <a href="#contact">Contact</a>
+            <a
+              href="/privacy"
+              onClick={(e) => { e.preventDefault(); navigateTo("/privacy", setPathname); }}
+            >
+              Privacy Policy
+            </a>
+          </nav>
+          <p className="site-footer-meta">
+            &copy; 2026 ResumeAlignAI · Premium AI resume service · <a href="mailto:supportresumealign@gmail.com">supportresumealign@gmail.com</a>
+          </p>
+        </div>
+      </footer>
 
       <AnimatePresence>
         {showScrollTop && (

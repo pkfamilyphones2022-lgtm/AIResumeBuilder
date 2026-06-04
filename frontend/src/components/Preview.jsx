@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, CheckCircle2, Download, FileEdit, LockKeyhole, Mail, Palette, Plus, Trash2, X } from "lucide-react";
+import axios from "axios";
+import { AlertTriangle, CheckCircle2, Download, FileEdit, Gift, LockKeyhole, Mail, Palette, Plus, Trash2, X } from "lucide-react";
 import { clearPaymentToken, getPaymentTokenPayload, payNow, restorePaymentToken } from "./Payment.jsx";
 import { normalizeResumeData, resumeToPlainText, templateCatalog } from "./resumeUtils.js";
 
@@ -401,6 +402,12 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
   const [downloadFormat, setDownloadFormat] = useState("pdf"); // pdf | docx
   const [showWarning, setShowWarning] = useState(false);
   const [warningChecked, setWarningChecked] = useState([false, false, false, false, false]);
+  const [pricing, setPricing] = useState({
+    amount: 6900,
+    originalAmount: 6900,
+    discountAmount: 0,
+    isReturning: false
+  });
 
   const resume = useMemo(() => normalizeResumeData(result), [result]);
   const layoutCount = useMemo(() => new Set(templateCatalog.map((template) => template.layout)).size, []);
@@ -443,6 +450,17 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
       setCheckingPayment(false);
     });
   }, [paymentScope, viewOnly]);
+
+  // Returning-customer discount: fetch the server-authoritative quote when email is known
+  useEffect(() => {
+    if (viewOnly || !userEmail) return;
+    const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+    let cancelled = false;
+    axios.post(`${API}/payment/quote`, { userEmail })
+      .then(({ data }) => { if (!cancelled && data) setPricing(data); })
+      .catch(() => { /* silent fallback to base price */ });
+    return () => { cancelled = true; };
+  }, [userEmail, viewOnly]);
 
   useEffect(() => {
     const blockPrintShortcut = (event) => {
@@ -866,7 +884,7 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
         console.warn("[emailFiles] DOCX generation failed:", docxErr.message);
       }
 
-      const { default: axios } = await import("axios");
+      const tokenPayload = getPaymentTokenPayload();
       await axios.post(`${API}/payment/email-attachments`, {
         name: userName,
         email: targetEmail,
@@ -874,7 +892,8 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
         pdfBase64,
         docxBase64,
         userId,
-        resumeId
+        resumeId,
+        orderId: tokenPayload?.orderId
       });
 
       setFileEmailStatus("sent");
@@ -1235,10 +1254,23 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
               </p>
             </div>
             {checkingPayment ? null : !paid ? (
-              <button className="pay-button" onClick={startPayment}>
-                <LockKeyhole aria-hidden="true" />
-                Pay Rs.69
-              </button>
+              <div className="pay-cluster">
+                {pricing.isReturning && (
+                  <div className="returning-discount-banner" role="status">
+                    <Gift size={14} aria-hidden="true" />
+                    <span>
+                      Welcome back — <strong>Rs.{Math.round(pricing.discountAmount / 100)} off</strong> your next resume!
+                    </span>
+                  </div>
+                )}
+                <button className="pay-button" onClick={startPayment}>
+                  <LockKeyhole aria-hidden="true" />
+                  Pay Rs.{Math.round(pricing.amount / 100)}
+                  {pricing.isReturning && (
+                    <span className="pay-button-strike">Rs.{Math.round(pricing.originalAmount / 100)}</span>
+                  )}
+                </button>
+              </div>
             ) : (
               <div className="download-group">
                 <label className="download-format">

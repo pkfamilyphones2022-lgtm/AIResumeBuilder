@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import {
   createEmailLog,
+  deleteAllUserDataByEmail,
   getAdminDailyStats,
   getAdminRecentActivity,
   getAdminResumeForEmail,
@@ -106,6 +107,26 @@ export const adminOverview = (_req, res) => {
   } catch (err) {
     console.error("[adminOverview]", err.message);
     return res.status(500).json({ error: "Unable to load admin dashboard." });
+  }
+};
+
+export const adminDeleteUserData = (req, res) => {
+  try {
+    const email = String(req.body?.email || "").trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "A valid customer email is required." });
+    }
+
+    const result = deleteAllUserDataByEmail(email);
+    if (!result.matchedUsers) {
+      return res.status(404).json({ deleted: false, error: "No data found for that email." });
+    }
+
+    console.log(`[admin] DELETE user data for ${email}:`, result.deleted);
+    return res.json({ deleted: true, ...result });
+  } catch (err) {
+    console.error("[adminDeleteUserData]", err.message);
+    return res.status(500).json({ error: "Unable to delete user data." });
   }
 };
 

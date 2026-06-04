@@ -61,16 +61,20 @@ export const payNow = async (context, onSuccess, onError) => {
   const { userId, resumeId, paymentScope, userName, userEmail, resumeTitle, resumeData } = context || {};
 
   try {
-    const orderResponse = await axios.post(`${API}/payment/order`, { userId, resumeId });
-    const { keyId, orderId, amount, currency } = orderResponse.data;
+    const orderResponse = await axios.post(`${API}/payment/order`, { userId, resumeId, userEmail });
+    const { keyId, orderId, amount, currency, isReturning, discountAmount } = orderResponse.data;
+    const rupeesPaid = Math.round((amount || 0) / 100);
+    const description = isReturning
+      ? `Premium resume download — Rs.${rupeesPaid} (Rs.${Math.round((discountAmount || 0) / 100)} returning-customer discount)`
+      : `Premium resume download — Rs.${rupeesPaid}`;
 
     const options = {
       key: keyId,
       amount,
       currency,
       order_id: orderId,
-      name: "ResumeAlignAI",
-      description: "Professional resume PDF download — Rs.69",
+      name: "ResumeAlignAI Premium",
+      description,
       prefill: {
         name: userName || "",
         email: userEmail || ""
