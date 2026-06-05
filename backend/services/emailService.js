@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import dns from "dns/promises";
 
 // ── Mode detection ──────────────────────────────────────────
 const isEtherealMode = () =>
@@ -26,22 +27,45 @@ const getEtherealTransporter = async () => {
   return _etherealTransporter;
 };
 
+// Cache the IPv4 address we resolved so we don't DNS-lookup on every email.
+let _resolvedSmtpHost = null;
+
+const resolveIPv4Host = async (hostname) => {
+  if (_resolvedSmtpHost) return _resolvedSmtpHost;
+  try {
+    const addrs = await dns.resolve4(hostname);
+    if (addrs.length === 0) throw new Error("No A records returned");
+    _resolvedSmtpHost = addrs[0];
+    console.log(`[emailService] Resolved ${hostname} → ${_resolvedSmtpHost} (IPv4)`);
+    return _resolvedSmtpHost;
+  } catch (err) {
+    console.warn(`[emailService] IPv4 resolution for ${hostname} failed, falling back to hostname:`, err.message);
+    return hostname;
+  }
+};
+
 // ── Real SMTP transporter ────────────────────────────────────
-const getRealTransporter = () => {
-  const host = process.env.EMAIL_HOST;
+const getRealTransporter = async () => {
+  const hostname = process.env.EMAIL_HOST;
   const port = parseInt(process.env.EMAIL_PORT || "587", 10);
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASS;
 
   if (!user || !pass) return null;
 
+  // Railway and many container hosts have unreliable IPv6 egress, and nodemailer's
+  // `family: 4` hint is sometimes ignored. We pre-resolve the hostname to an IPv4
+  // address ourselves and pass that as the host. `tls.servername` keeps SNI intact.
+  const host = await resolveIPv4Host(hostname);
+
   return nodemailer.createTransport({
     host,
     port,
     secure: port === 465,
     auth: { user, pass },
-    // Railway and many container hosts have unreliable IPv6 egress.
-    // Force the SMTP socket to use IPv4 so Gmail (which resolves to both A and AAAA records) is reachable.
+    tls: { servername: hostname },
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
     family: 4
   });
 };
@@ -124,7 +148,7 @@ const buildResumeSection = (resumeData) => {
 const getTransporter = async () => {
   if (isEtherealMode()) return getEtherealTransporter();
 
-  const t = getRealTransporter();
+  const t = await getRealTransporter();
   if (!t) {
     if (process.env.NODE_ENV === "production")
       throw new Error("SMTP credentials (EMAIL_USER, EMAIL_PASS) are not configured.");
