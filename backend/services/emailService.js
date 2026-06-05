@@ -1,5 +1,48 @@
 import nodemailer from "nodemailer";
 import dns from "dns/promises";
+import { Resend } from "resend";
+
+// ── Resend (HTTPS API) — preferred for cloud deploys ─────────
+// SMTP egress is unreliable on Railway/Render/Fly (port 587/465 often blocked or
+// IPv6-only routed). Resend uses port 443 which is always open, so we use it
+// whenever RESEND_API_KEY is set. Falls back to nodemailer/SMTP for local dev.
+const isResendMode = () => Boolean(process.env.RESEND_API_KEY);
+
+let _resendClient = null;
+const getResendClient = () => {
+  if (!_resendClient) _resendClient = new Resend(process.env.RESEND_API_KEY);
+  return _resendClient;
+};
+
+// Resend uses {filename, content} where content can be a Buffer or base64 string.
+// Our existing send-* functions pass nodemailer-shaped attachments with Buffer content.
+const normaliseAttachments = (attachments) =>
+  (attachments || []).map((a) => ({
+    filename: a.filename,
+    content: a.content,
+    ...(a.contentType ? { contentType: a.contentType } : {})
+  }));
+
+// Returns a nodemailer-shaped transporter so the rest of the code is unchanged.
+const getResendTransporter = () => ({
+  sendMail: async ({ from, to, subject, html, attachments }) => {
+    const resend = getResendClient();
+    const { data, error } = await resend.emails.send({
+      from,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html,
+      ...(attachments && attachments.length ? { attachments: normaliseAttachments(attachments) } : {})
+    });
+    if (error) throw new Error(error.message || error.name || "Resend send failed");
+    return { messageId: data?.id || "resend" };
+  },
+  verify: async () => {
+    // Resend does not provide a verify endpoint; a successful client construction
+    // means we have an API key — actual auth is validated on the first send.
+    return true;
+  }
+});
 
 // ── Mode detection ──────────────────────────────────────────
 const isEtherealMode = () =>
@@ -146,6 +189,7 @@ const buildResumeSection = (resumeData) => {
 
 // ── Shared transporter factory ───────────────────────────────
 const getTransporter = async () => {
+  if (isResendMode()) return getResendTransporter();
   if (isEtherealMode()) return getEtherealTransporter();
 
   const t = await getRealTransporter();
