@@ -1,7 +1,7 @@
 import React from "react";
 import { ChevronLeft, Mail, ShieldCheck } from "lucide-react";
 
-const SUPPORT_EMAIL = "supportresumealign@gmail.com";
+const SUPPORT_EMAIL = "resumealignai@resumealignai.online";
 
 export default function PrivacyPolicy({ onBack }) {
   return (

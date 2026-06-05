@@ -260,7 +260,7 @@ export const sendAdminResumeCopy = async ({ name, email, resumeTitle, resumeData
         ${buildResumeSection(resumeData)}
         <p style="color:#94a3b8;font-size:13px;margin:24px 0 0;line-height:1.6;">
           Questions? Email us at
-          <a href="mailto:supportresumealign@gmail.com" style="color:#0f766e;text-decoration:none;">supportresumealign@gmail.com</a>.
+          <a href="mailto:resumealignai@resumealignai.online" style="color:#0f766e;text-decoration:none;">resumealignai@resumealignai.online</a>.
         </p>
       </td></tr>
       <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 38px;text-align:center;">
@@ -335,7 +335,7 @@ const buildConfirmationHtml = ({ name, resumeTitle, amountRs, paymentId }) => `
 
         <p style="color:#94a3b8;font-size:13px;margin:0;line-height:1.6;">
           Questions? Email
-          <a href="mailto:supportresumealign@gmail.com" style="color:#0f766e;text-decoration:none;">supportresumealign@gmail.com</a>
+          <a href="mailto:resumealignai@resumealignai.online" style="color:#0f766e;text-decoration:none;">resumealignai@resumealignai.online</a>
         </p>
       </td></tr>
       <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 40px;text-align:center;">
@@ -434,7 +434,7 @@ const buildAttachmentsHtml = ({ name, resumeTitle, amountRs }) => `
 
         <p style="color:#94a3b8;font-size:13px;margin:0;line-height:1.6;">
           Questions? Email us at
-          <a href="mailto:supportresumealign@gmail.com" style="color:#0f766e;text-decoration:none;">supportresumealign@gmail.com</a>
+          <a href="mailto:resumealignai@resumealignai.online" style="color:#0f766e;text-decoration:none;">resumealignai@resumealignai.online</a>
         </p>
       </td></tr>
       <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 40px;text-align:center;">

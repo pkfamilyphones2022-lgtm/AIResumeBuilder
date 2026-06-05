@@ -348,7 +348,7 @@ If payment succeeds but the customer closes the page or the session times out, a
 - Resume file email sends both PDF and DOCX attachments.
 - Support/admin resend sends the stored generated resume to the paid customer.
 - Gmail requires a 16-character App Password, not the normal Gmail password.
-- Support email: `supportresumealign@gmail.com`.
+- Support email: `resumealignai@resumealignai.online`.
 
 ## Production Deployment
 

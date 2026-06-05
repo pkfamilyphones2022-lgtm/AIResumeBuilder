@@ -221,7 +221,7 @@ const atsRejectionReasons = [
 const faqs = [
   {
     q: "What if my payment fails?",
-    a: "If your payment was deducted but the PDF didn't unlock, contact us at supportresumealign@gmail.com with your payment reference number. We'll verify within 24 hours and either manually unlock your download or process a full refund — no questions asked."
+    a: "If your payment was deducted but the PDF didn't unlock, contact us at resumealignai@resumealignai.online with your payment reference number. We'll verify within 24 hours and either manually unlock your download or process a full refund — no questions asked."
   },
   {
     q: "How many resumes can I download?",
@@ -1308,9 +1308,9 @@ export default function App() {
           <p>Contact details</p>
           <h2>Keep a clear way for interested users to reach the team.</h2>
           <div className="contact-grid">
-            <a href="mailto:supportresumealign@gmail.com">
+            <a href="mailto:resumealignai@resumealignai.online">
               <Mail aria-hidden="true" />
-              supportresumealign@gmail.com
+              resumealignai@resumealignai.online
             </a>
           </div>
         </motion.div>
@@ -1370,7 +1370,7 @@ export default function App() {
             </a>
           </nav>
           <p className="site-footer-meta">
-            &copy; 2026 ResumeAlignAI · Premium AI resume service · <a href="mailto:supportresumealign@gmail.com">supportresumealign@gmail.com</a>
+            &copy; 2026 ResumeAlignAI · Premium AI resume service · <a href="mailto:resumealignai@resumealignai.online">resumealignai@resumealignai.online</a>
           </p>
         </div>
       </footer>
