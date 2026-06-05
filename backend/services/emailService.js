@@ -39,7 +39,10 @@ const getRealTransporter = () => {
     host,
     port,
     secure: port === 465,
-    auth: { user, pass }
+    auth: { user, pass },
+    // Railway and many container hosts have unreliable IPv6 egress.
+    // Force the SMTP socket to use IPv4 so Gmail (which resolves to both A and AAAA records) is reachable.
+    family: 4
   });
 };
 

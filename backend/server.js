@@ -50,13 +50,13 @@ try {
   console.error("[db] Database init failed:", err.message);
 }
 
-// In production, verify SMTP transport at startup so misconfigured creds surface immediately
+// In production, verify SMTP transport at startup so misconfigured creds surface in logs.
+// Do not crash the process — a transient SMTP outage should not take the whole app down.
 if (process.env.NODE_ENV === "production") {
   verifyEmailTransport()
     .then(() => console.log("[email] SMTP transport verified."))
     .catch((err) => {
-      console.error("[email] SMTP verify failed at startup:", err.message);
-      process.exit(1);
+      console.error("[email] SMTP verify failed at startup (emails will fail until fixed):", err.message);
     });
 }
 
