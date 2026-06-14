@@ -6,7 +6,6 @@ import {
   createPayment,
   getDownloadByPaymentId,
   getPaymentByOrderId,
-  getSuccessfulPaymentCountByEmail,
   updateEmailStatus,
   updatePaymentFailed,
   updatePaymentSuccess,
@@ -15,22 +14,16 @@ import {
 import { sendPaymentConfirmation, sendResumeWithAttachments } from "../services/emailService.js";
 
 const RAZORPAY_ORDERS_URL = "https://api.razorpay.com/v1/orders";
-const BASE_PAYMENT_AMOUNT = 6900;            // Rs.69 first-resume price
-const RETURNING_DISCOUNT_AMOUNT = 5000;       // Rs.50 off subsequent resumes
-const RETURNING_PAYMENT_AMOUNT = BASE_PAYMENT_AMOUNT - RETURNING_DISCOUNT_AMOUNT;
+const BASE_PAYMENT_AMOUNT = 6900;            // Rs.69 — flat price for every resume
 
-// Server-authoritative price lookup. Never trust a client-supplied amount.
-const resolvePricing = (email) => {
-  const successCount = getSuccessfulPaymentCountByEmail(email);
-  const isReturning = successCount > 0;
-  return {
-    isReturning,
-    amount: isReturning ? RETURNING_PAYMENT_AMOUNT : BASE_PAYMENT_AMOUNT,
-    originalAmount: BASE_PAYMENT_AMOUNT,
-    discountAmount: isReturning ? RETURNING_DISCOUNT_AMOUNT : 0,
-    previousPayments: successCount
-  };
-};
+// Server-authoritative price lookup. Flat Rs.69 for all resumes (no returning-customer discount).
+const resolvePricing = (_email) => ({
+  isReturning: false,
+  amount: BASE_PAYMENT_AMOUNT,
+  originalAmount: BASE_PAYMENT_AMOUNT,
+  discountAmount: 0,
+  previousPayments: 0
+});
 
 const getRazorpayConfig = () => {
   const keyId = process.env.RAZORPAY_KEY_ID;
