@@ -116,6 +116,18 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
+// /version — expose what's actually running. Lets us verify Railway
+// has the latest commit deployed without guessing from logs.
+// Railway auto-injects RAILWAY_GIT_COMMIT_SHA and friends at build time.
+app.get("/version", (_req, res) => {
+  res.json({
+    sha: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || "unknown",
+    branch: process.env.RAILWAY_GIT_BRANCH || "unknown",
+    deployedAt: process.env.RAILWAY_DEPLOYMENT_CREATED_AT || "unknown",
+    env: process.env.NODE_ENV || "development"
+  });
+});
+
 app.use("/api/generate", aiLimiter);
 app.use("/api/improve", aiLimiter);
 app.use("/api/suggest", aiLimiter);
