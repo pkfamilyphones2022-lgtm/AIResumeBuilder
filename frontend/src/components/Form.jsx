@@ -392,17 +392,17 @@ export default function Form({ mode = "experienced" }) {
 
             <motion.label custom={3} variants={fieldAnim} initial="hidden" animate="show">
               <RequiredLabel>Email</RequiredLabel>
-              <input type="email" placeholder="priya@email.com" value={form.email} onChange={(e) => set("email", e.target.value)} />
+              <input type="email" placeholder="e.g. priya@email.com" value={form.email} onChange={(e) => set("email", e.target.value)} />
             </motion.label>
 
             <motion.label custom={4} variants={fieldAnim} initial="hidden" animate="show">
               <RequiredLabel>Phone</RequiredLabel>
-              <input placeholder="+91 98765 43210" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+              <input placeholder="e.g. +91 98765 43210" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
             </motion.label>
 
             <motion.label custom={5} variants={fieldAnim} initial="hidden" animate="show">
               <OptionalLabel>Location</OptionalLabel>
-              <input placeholder="Bengaluru, India" value={form.location} onChange={(e) => set("location", e.target.value)} />
+              <input placeholder="e.g. Bengaluru, India" value={form.location} onChange={(e) => set("location", e.target.value)} />
             </motion.label>
 
             <motion.label custom={6} variants={fieldAnim} initial="hidden" animate="show">
@@ -449,7 +449,7 @@ export default function Form({ mode = "experienced" }) {
             <motion.label custom={10} variants={fieldAnim} initial="hidden" animate="show">
               <OptionalLabel>LinkedIn</OptionalLabel>
               <input
-                placeholder="linkedin.com/in/priya-sharma"
+                placeholder="e.g. linkedin.com/in/priya-sharma"
                 value={form.linkedin}
                 onChange={(e) => set("linkedin", e.target.value)}
               />
@@ -458,7 +458,7 @@ export default function Form({ mode = "experienced" }) {
             <motion.label custom={11} variants={fieldAnim} initial="hidden" animate="show">
               <OptionalLabel>Portfolio / GitHub</OptionalLabel>
               <input
-                placeholder="github.com/username or portfolio.io"
+                placeholder="e.g. github.com/username or portfolio.io"
                 value={form.portfolio}
                 onChange={(e) => set("portfolio", e.target.value)}
               />
@@ -533,7 +533,7 @@ export default function Form({ mode = "experienced" }) {
                     <label>
                       Duration
                       <input
-                        placeholder="Jan 2022 – Present"
+                        placeholder="e.g. Jan 2022 – Present"
                         value={exp.duration}
                         onChange={(e) => updateEntry("experiences", i, "duration", e.target.value)}
                       />
@@ -541,7 +541,7 @@ export default function Form({ mode = "experienced" }) {
                     <label>
                       Location / Mode
                       <input
-                        placeholder="Bengaluru / Remote / Hybrid"
+                        placeholder="e.g. Bengaluru / Remote / Hybrid"
                         value={exp.location}
                         onChange={(e) => updateEntry("experiences", i, "location", e.target.value)}
                       />
@@ -671,7 +671,7 @@ export default function Form({ mode = "experienced" }) {
                     <label>
                       Role / Training title
                       <input
-                        placeholder="Frontend Intern / Java Full Stack Training"
+                        placeholder="e.g. Frontend Intern / Java Full Stack Training"
                         value={item.role}
                         onChange={(e) => updateEntry("trainingList", i, "role", e.target.value)}
                       />
@@ -679,7 +679,7 @@ export default function Form({ mode = "experienced" }) {
                     <label>
                       Organization
                       <input
-                        placeholder="Company, college, training institute"
+                        placeholder="e.g. Company, college, training institute"
                         value={item.organization}
                         onChange={(e) => updateEntry("trainingList", i, "organization", e.target.value)}
                       />
@@ -687,7 +687,7 @@ export default function Form({ mode = "experienced" }) {
                     <label>
                       Duration
                       <input
-                        placeholder="Jun 2024 - Aug 2024"
+                        placeholder="e.g. Jun 2024 – Aug 2024"
                         value={item.duration}
                         onChange={(e) => updateEntry("trainingList", i, "duration", e.target.value)}
                       />
@@ -695,7 +695,7 @@ export default function Form({ mode = "experienced" }) {
                     <label>
                       Location / Mode
                       <input
-                        placeholder="Pune / Remote"
+                        placeholder="e.g. Pune / Remote"
                         value={item.location}
                         onChange={(e) => updateEntry("trainingList", i, "location", e.target.value)}
                       />
@@ -770,7 +770,7 @@ export default function Form({ mode = "experienced" }) {
                 <label>
                   Tech stack / Subtitle
                   <input
-                    placeholder="React, Node.js, PostgreSQL, AWS"
+                    placeholder="e.g. React, Node.js, PostgreSQL, AWS"
                     value={proj.subtitle}
                     onChange={(e) => updateEntry("projectsList", i, "subtitle", e.target.value)}
                   />
@@ -778,7 +778,7 @@ export default function Form({ mode = "experienced" }) {
                 <label>
                   Duration / Year
                   <input
-                    placeholder="2024 or Jan – Mar 2024"
+                    placeholder="e.g. 2024 or Jan – Mar 2024"
                     value={proj.duration}
                     onChange={(e) => updateEntry("projectsList", i, "duration", e.target.value)}
                   />
@@ -841,7 +841,7 @@ export default function Form({ mode = "experienced" }) {
                 <label>
                   Degree / Qualification
                   <input
-                    placeholder="B.Tech in Computer Science"
+                    placeholder="e.g. B.Tech in Computer Science"
                     value={edu.degree}
                     onChange={(e) => updateEntry("educationList", i, "degree", e.target.value)}
                   />
@@ -849,7 +849,7 @@ export default function Form({ mode = "experienced" }) {
                 <label>
                   Institution / University
                   <input
-                    placeholder="IIT Bangalore / VTU"
+                    placeholder="e.g. IIT Bangalore / VTU"
                     value={edu.institution}
                     onChange={(e) => updateEntry("educationList", i, "institution", e.target.value)}
                   />
@@ -857,7 +857,7 @@ export default function Form({ mode = "experienced" }) {
                 <label>
                   Duration / Year
                   <input
-                    placeholder="2019 – 2023"
+                    placeholder="e.g. 2019 – 2023"
                     value={edu.duration}
                     onChange={(e) => updateEntry("educationList", i, "duration", e.target.value)}
                   />
@@ -865,7 +865,7 @@ export default function Form({ mode = "experienced" }) {
                 <label>
                   CGPA / Score / Specialization
                   <input
-                    placeholder="8.4 CGPA · First Class · ML Specialization"
+                    placeholder="e.g. 8.4 CGPA · First Class · ML Specialization"
                     value={edu.details}
                     onChange={(e) => updateEntry("educationList", i, "details", e.target.value)}
                   />

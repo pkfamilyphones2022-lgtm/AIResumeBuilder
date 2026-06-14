@@ -10,6 +10,7 @@ import {
   updateEmailStatus
 } from "../db/queries.js";
 import { sendAdminResumeCopy } from "../services/emailService.js";
+import { runBackup } from "../services/backupService.js";
 
 const safeJson = (value, fallback = {}) => {
   try {
@@ -173,5 +174,20 @@ export const adminSendResume = async (req, res) => {
   } catch (err) {
     console.error("[adminSendResume]", err.message);
     return res.status(500).json({ error: "Admin email action failed." });
+  }
+};
+
+// POST /api/admin/backup — manual trigger for the daily SQLite snapshot.
+// Useful for verifying BACKUP_EMAIL config without waiting for the cron tick.
+export const adminTriggerBackup = async (_req, res) => {
+  try {
+    const result = await runBackup();
+    if (!result.ok) {
+      return res.status(500).json(result);
+    }
+    return res.json(result);
+  } catch (err) {
+    console.error("[adminTriggerBackup]", err.message);
+    return res.status(500).json({ ok: false, reason: err.message });
   }
 };

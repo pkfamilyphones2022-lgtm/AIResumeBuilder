@@ -24,14 +24,16 @@ const normaliseAttachments = (attachments) =>
   }));
 
 // Returns a nodemailer-shaped transporter so the rest of the code is unchanged.
+// Translates nodemailer's `replyTo` to Resend's `reply_to`.
 const getResendTransporter = () => ({
-  sendMail: async ({ from, to, subject, html, attachments }) => {
+  sendMail: async ({ from, to, subject, html, attachments, replyTo }) => {
     const resend = getResendClient();
     const { data, error } = await resend.emails.send({
       from,
       to: Array.isArray(to) ? to : [to],
       subject,
       html,
+      ...(replyTo ? { reply_to: replyTo } : {}),
       ...(attachments && attachments.length ? { attachments: normaliseAttachments(attachments) } : {})
     });
     if (error) throw new Error(error.message || error.name || "Resend send failed");
@@ -221,23 +223,83 @@ const fromAddress = () =>
     ? "ResumeAlignAI <test@resumeai.app>"
     : process.env.EMAIL_FROM || `ResumeAlignAI <${process.env.EMAIL_USER}>`;
 
+// Reply-To address. Until we have a real receiving mailbox at support@,
+// REPLY_TO_EMAIL on Railway can route customer replies to a personal inbox
+// (e.g. a Gmail). Falls back to the support address itself if unset, which
+// works once the mailbox is provisioned on the domain (Zoho/Google Workspace).
+const replyToAddress = () => process.env.REPLY_TO_EMAIL || "support@resumealignai.online";
+
 // Public website URL — used inside email templates to link the logo and CTA.
 const appUrl = () => process.env.APP_URL || "https://resumealignai.online";
+const supportEmail = () => "support@resumealignai.online";
 
-// Re-usable inline-styled "Visit website" block (added near the bottom of every email).
-const websiteCta = () => {
+// Branded header — logo + wordmark + Premium badge in a horizontal layout
+// matching the website brand. Used at the top of every customer email.
+const emailHeader = (subtitle) => {
   const url = appUrl();
   return `
-    <div style="background:#f0fdf9;border:1px solid #99f6e4;border-radius:10px;padding:16px 20px;margin:0 0 20px;text-align:center;">
-      <p style="color:#0f766e;font-size:13px;font-weight:700;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.05em;">Visit ResumeAlignAI</p>
-      <a href="${url}" target="_blank" rel="noopener" style="color:#ffffff;background:#0f766e;border-radius:8px;display:inline-block;font-size:14px;font-weight:700;padding:10px 22px;text-decoration:none;">
-        Open ResumeAlignAI &rarr;
-      </a>
-      <p style="color:#64748b;font-size:12px;margin:10px 0 0;">
-        <a href="${url}" target="_blank" rel="noopener" style="color:#0f766e;text-decoration:none;">${url.replace(/^https?:\/\//, "")}</a>
+  <tr><td style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 50%,#d99152 140%);padding:30px 36px;text-align:center;">
+    <a href="${url}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;">
+      <table cellpadding="0" cellspacing="0" align="center" border="0" style="border-collapse:collapse;">
+        <tr>
+          <td style="vertical-align:middle;padding-right:14px;">
+            <div style="background:linear-gradient(135deg,#f5d56b 0%,#d99152 100%);border-radius:12px;color:#ffffff;font-family:'Segoe UI',Arial,sans-serif;font-size:28px;font-weight:800;height:54px;line-height:54px;text-align:center;width:54px;box-shadow:0 6px 18px rgba(217,145,82,0.4);">R</div>
+          </td>
+          <td style="vertical-align:middle;text-align:left;">
+            <div style="color:#ffffff;font-family:'Segoe UI',Arial,sans-serif;font-size:24px;font-weight:800;letter-spacing:-0.01em;line-height:1.1;">
+              ResumeAlignAI
+              <span style="background:linear-gradient(135deg,#f5d56b 0%,#c79a2b 60%,#a37414 100%);border-radius:999px;color:#2a1c00;font-size:10px;font-weight:800;letter-spacing:0.08em;margin-left:8px;padding:3px 9px;text-transform:uppercase;vertical-align:middle;display:inline-block;">Premium</span>
+            </div>
+            <div style="color:rgba(255,255,255,0.82);font-size:12px;font-weight:500;margin-top:4px;">${url.replace(/^https?:\/\//, "")}</div>
+          </td>
+        </tr>
+      </table>
+    </a>
+    ${subtitle ? `<p style="color:rgba(255,255,255,0.92);font-size:14px;margin:18px 0 0;font-weight:500;">${subtitle}</p>` : ""}
+  </td></tr>`;
+};
+
+// Prominent contact block — appears just above the footer. Surfaces the
+// support email and website URL clearly in every email.
+const contactBlock = () => {
+  const url = appUrl();
+  return `
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px 22px;margin:0 0 18px;text-align:center;">
+      <p style="color:#1e293b;font-size:14px;font-weight:700;margin:0 0 10px;letter-spacing:0.02em;">Need help? We're here.</p>
+      <p style="color:#475569;font-size:13px;line-height:1.7;margin:0;">
+        <strong style="color:#0f766e;">Email:</strong>
+        <a href="mailto:${supportEmail()}" style="color:#0f766e;text-decoration:none;font-weight:700;">${supportEmail()}</a>
+        <br>
+        <strong style="color:#0f766e;">Website:</strong>
+        <a href="${url}" target="_blank" rel="noopener" style="color:#0f766e;text-decoration:none;font-weight:700;">${url.replace(/^https?:\/\//, "")}</a>
       </p>
     </div>`;
 };
+
+// Re-usable inline-styled "Visit website" CTA button. Sits above the
+// contact block in every email.
+const websiteCta = () => {
+  const url = appUrl();
+  return `
+    <div style="background:#f0fdf9;border:1px solid #99f6e4;border-radius:10px;padding:18px 20px;margin:0 0 18px;text-align:center;">
+      <p style="color:#0f766e;font-size:13px;font-weight:700;margin:0 0 12px;text-transform:uppercase;letter-spacing:0.05em;">Visit ResumeAlignAI</p>
+      <a href="${url}" target="_blank" rel="noopener" style="color:#ffffff;background:linear-gradient(135deg,#0f766e,#0d9488);border-radius:8px;display:inline-block;font-size:14px;font-weight:700;padding:11px 26px;text-decoration:none;box-shadow:0 4px 12px rgba(15,118,110,0.25);">
+        Open ResumeAlignAI &rarr;
+      </a>
+    </div>`;
+};
+
+// Shared footer with brand copyright + redundant support link.
+const emailFooter = (line) => `
+  <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:22px 38px;text-align:center;">
+    <p style="color:#64748b;font-size:12px;margin:0 0 6px;line-height:1.6;">
+      &copy; 2026 <strong style="color:#0f766e;">ResumeAlignAI</strong> Premium &middot;
+      <a href="${appUrl()}" target="_blank" rel="noopener" style="color:#0f766e;text-decoration:none;">${appUrl().replace(/^https?:\/\//, "")}</a>
+    </p>
+    <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.6;">
+      Questions? <a href="mailto:${supportEmail()}" style="color:#94a3b8;text-decoration:underline;">${supportEmail()}</a>${line ? `<br>${line}` : ""}
+    </p>
+  </td></tr>`;
 
 const logSent = (info, email) => {
   if (isEtherealMode()) {
@@ -264,11 +326,7 @@ export const sendAdminResumeCopy = async ({ name, email, resumeTitle, resumeData
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
   <tr><td align="center">
     <table cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;max-width:620px;width:100%;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-      <tr><td style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);padding:30px 38px;text-align:center;">
-        <a href="${appUrl()}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;"><div style="background:#fff;border-radius:10px;color:#0f766e;display:inline-block;font-size:18px;font-weight:800;height:44px;line-height:44px;width:44px;margin-bottom:14px;">R</div></a>
-        <h1 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 6px;"><a href="${appUrl()}" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">ResumeAlignAI</a></h1>
-        <p style="color:rgba(255,255,255,0.88);font-size:14px;margin:0;">Support copy of your updated resume</p>
-      </td></tr>
+      ${emailHeader("Support copy of your updated resume")}
       <tr><td style="padding:34px 38px;">
         <p style="color:#1e293b;font-size:16px;margin:0 0 16px;">Hi <strong>${name || "there"}</strong>,</p>
         <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 18px;">
@@ -277,14 +335,9 @@ export const sendAdminResumeCopy = async ({ name, email, resumeTitle, resumeData
         ${note ? `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;color:#334155;font-size:13px;line-height:1.6;margin:0 0 20px;padding:14px 16px;"><strong>Support note:</strong> ${note}</div>` : ""}
         ${buildResumeSection(resumeData)}
         ${websiteCta()}
-        <p style="color:#94a3b8;font-size:13px;margin:24px 0 0;line-height:1.6;">
-          Questions? Email us at
-          <a href="mailto:resumealignai@resumealignai.online" style="color:#0f766e;text-decoration:none;">resumealignai@resumealignai.online</a>.
-        </p>
+        ${contactBlock()}
       </td></tr>
-      <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 38px;text-align:center;">
-        <p style="color:#94a3b8;font-size:12px;margin:0;line-height:1.6;">&copy; 2026 ResumeAlignAI</p>
-      </td></tr>
+      ${emailFooter()}
     </table>
   </td></tr>
 </table>
@@ -294,6 +347,7 @@ export const sendAdminResumeCopy = async ({ name, email, resumeTitle, resumeData
   try {
     const info = await transporter.sendMail({
       from: fromAddress(),
+      replyTo: replyToAddress(),
       to: email,
       subject: `ResumeAlignAI Support Copy - ${resumeTitle || "Your Resume"}`,
       html
@@ -315,11 +369,7 @@ const buildConfirmationHtml = ({ name, resumeTitle, amountRs, paymentId }) => `
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
   <tr><td align="center">
     <table cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;max-width:580px;width:100%;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-      <tr><td style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);padding:32px 40px;text-align:center;">
-        <a href="${appUrl()}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;"><div style="background:#fff;border-radius:10px;color:#0f766e;display:inline-block;font-size:18px;font-weight:800;height:44px;line-height:44px;width:44px;margin-bottom:14px;">R</div></a>
-        <h1 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 6px;"><a href="${appUrl()}" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">ResumeAlignAI Premium</a></h1>
-        <p style="color:rgba(255,255,255,0.88);font-size:14px;margin:0;">Payment confirmed — your resume is unlocked</p>
-      </td></tr>
+      ${emailHeader("Payment confirmed &mdash; your resume is unlocked")}
       <tr><td style="padding:36px 40px;">
         <p style="color:#1e293b;font-size:16px;margin:0 0 16px;">Hi <strong>${name || "there"}</strong>,</p>
         <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 22px;">
@@ -353,14 +403,9 @@ const buildConfirmationHtml = ({ name, resumeTitle, amountRs, paymentId }) => `
         </p>
 
         ${websiteCta()}
-        <p style="color:#94a3b8;font-size:13px;margin:0;line-height:1.6;">
-          Questions? Email
-          <a href="mailto:resumealignai@resumealignai.online" style="color:#0f766e;text-decoration:none;">resumealignai@resumealignai.online</a>
-        </p>
+        ${contactBlock()}
       </td></tr>
-      <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 40px;text-align:center;">
-        <p style="color:#94a3b8;font-size:12px;margin:0;line-height:1.6;">&copy; 2026 ResumeAlignAI Premium</p>
-      </td></tr>
+      ${emailFooter()}
     </table>
   </td></tr>
 </table>
@@ -375,6 +420,7 @@ export const sendPaymentConfirmation = async ({ name, email, resumeTitle, amount
 
     const info = await transporter.sendMail({
       from: fromAddress(),
+      replyTo: replyToAddress(),
       to: email,
       subject: `Payment Confirmed - ResumeAlignAI Premium (Rs.${amountRs})`,
       html: buildConfirmationHtml({ name, resumeTitle, amountRs, paymentId })
@@ -401,11 +447,7 @@ const buildAttachmentsHtml = ({ name, resumeTitle, amountRs }) => `
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
   <tr><td align="center">
     <table cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;max-width:580px;width:100%;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-      <tr><td style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);padding:32px 40px;text-align:center;">
-        <a href="${appUrl()}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;"><div style="background:#fff;border-radius:10px;color:#0f766e;display:inline-block;font-size:18px;font-weight:800;height:44px;line-height:44px;width:44px;margin-bottom:14px;">R</div></a>
-        <h1 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 6px;"><a href="${appUrl()}" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">ResumeAlignAI</a></h1>
-        <p style="color:rgba(255,255,255,0.85);font-size:14px;margin:0;">Payment confirmed — your resume files are attached!</p>
-      </td></tr>
+      ${emailHeader("Payment confirmed &mdash; your resume files are attached!")}
       <tr><td style="padding:36px 40px;">
         <p style="color:#1e293b;font-size:16px;margin:0 0 16px;">Hi <strong>${name || "there"}</strong>,</p>
         <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 24px;">
@@ -453,17 +495,9 @@ const buildAttachmentsHtml = ({ name, resumeTitle, amountRs }) => `
         </div>
 
         ${websiteCta()}
-        <p style="color:#94a3b8;font-size:13px;margin:0;line-height:1.6;">
-          Questions? Email us at
-          <a href="mailto:resumealignai@resumealignai.online" style="color:#0f766e;text-decoration:none;">resumealignai@resumealignai.online</a>
-        </p>
+        ${contactBlock()}
       </td></tr>
-      <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 40px;text-align:center;">
-        <p style="color:#94a3b8;font-size:12px;margin:0;line-height:1.6;">
-          &copy; 2026 ResumeAlignAI<br>
-          You received this because you made a purchase on ResumeAlignAI.
-        </p>
-      </td></tr>
+      ${emailFooter("You received this because you made a purchase on ResumeAlignAI.")}
     </table>
   </td></tr>
 </table>
@@ -496,6 +530,7 @@ export const sendResumeWithAttachments = async ({ name, email, resumeTitle, pdfB
   try {
     const info = await transporter.sendMail({
       from: fromAddress(),
+      replyTo: replyToAddress(),
       to: email,
       subject: `✅ Payment Confirmed + Your Resume Files — ResumeAlignAI`,
       html: buildAttachmentsHtml({ name, resumeTitle, amountRs }),

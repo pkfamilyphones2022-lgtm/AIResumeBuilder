@@ -24,7 +24,7 @@ The app is currently deployed and accepting real Razorpay payments.
 | Database (SQLite + WAL) | Railway persistent volume mounted at `/data` | `/data/database.sqlite` |
 | Email delivery | Resend HTTPS API | `onboarding@resend.dev` sandbox; domain verification for `resumealignai.online` in progress |
 | Payment gateway | Razorpay | flat Rs.69 per resume; International Cards activation pending |
-| Support email | Custom domain mailbox | `resumealignai@resumealignai.online` |
+| Support email | Custom domain mailbox | `support@resumealignai.online` |
 
 Notes:
 
@@ -446,7 +446,7 @@ Resend sender requirements:
 Support email used in the app:
 
 ```text
-resumealignai@resumealignai.online
+support@resumealignai.online
 ```
 
 ## Brand Assets

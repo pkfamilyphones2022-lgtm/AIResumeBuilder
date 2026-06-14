@@ -16,7 +16,7 @@ import {
   recordResumeDownload,
   emailResumeAttachments
 } from "../controllers/paymentController.js";
-import { adminDeleteUserData, adminOverview, adminSendResume, requireAdmin } from "../controllers/adminController.js";
+import { adminDeleteUserData, adminOverview, adminSendResume, adminTriggerBackup, requireAdmin } from "../controllers/adminController.js";
 
 const router = express.Router();
 
@@ -47,5 +47,6 @@ router.post("/payment/email-attachments", emailResumeAttachments);
 router.get("/admin/overview", requireAdmin, adminOverview);
 router.post("/admin/resumes/:resumeId/send", requireAdmin, adminSendResume);
 router.post("/admin/users/delete-by-email", requireAdmin, adminDeleteUserData);
+router.post("/admin/backup", requireAdmin, adminTriggerBackup);
 
 export default router;

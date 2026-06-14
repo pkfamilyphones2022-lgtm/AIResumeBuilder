@@ -942,7 +942,7 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
                   <input
                     className="email-confirm-input"
                     type="email"
-                    placeholder="Enter your email address"
+                    placeholder="e.g. you@example.com"
                     id="email-warning-input"
                   />
                 )}
@@ -1108,7 +1108,7 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
                   <input
                     className="email-confirm-input"
                     type="email"
-                    placeholder="Enter your email address"
+                    placeholder="e.g. you@example.com"
                     id="email-warning-input"
                   />
                 )}

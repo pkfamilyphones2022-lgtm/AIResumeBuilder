@@ -6,12 +6,156 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
     <meta name="theme-color" content="#0f766e" />
-    <meta name="description" content="ResumeAlignAI — Premium AI resume builder. Generate ATS-optimised resumes aligned to your target role in minutes." />
-    <title>ResumeAlignAI — Premium AI Resume Builder</title>
+
+    <!-- Primary SEO -->
+    <title>Create an ATS-Ready Resume for Any Job in Minutes — ResumeAlignAI</title>
+    <meta name="description" content="Upload your details, add a job description, and ResumeAlignAI builds a professional ATS-aligned resume matched with the right keywords. Rs.69 per resume." />
+    <meta name="keywords" content="resume builder, ATS resume, AI resume, job-specific resume, ATS keyword match, ResumeAlignAI" />
+    <meta name="author" content="ResumeAlignAI" />
+    <link rel="canonical" href="https://resumealignai.online/" />
+
+    <!-- Open Graph (Facebook, LinkedIn, WhatsApp link previews) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://resumealignai.online/" />
+    <meta property="og:title" content="Create an ATS-Ready Resume for Any Job in Minutes — ResumeAlignAI" />
+    <meta property="og:description" content="Upload your details, add a job description, and ResumeAlignAI builds a professional ATS-aligned resume matched with the right keywords." />
+    <meta property="og:image" content="https://resumealignai.online/favicon.svg" />
+    <meta property="og:site_name" content="ResumeAlignAI" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Create an ATS-Ready Resume for Any Job in Minutes" />
+    <meta name="twitter:description" content="Upload your details, add a job description, and ResumeAlignAI builds a professional ATS-aligned resume matched with the right keywords." />
+    <meta name="twitter:image" content="https://resumealignai.online/favicon.svg" />
+
+    <!-- Structured data so Google understands the product -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "ResumeAlignAI",
+      "description": "AI resume builder that generates ATS-optimised resumes matched to a job description.",
+      "url": "https://resumealignai.online/",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "69",
+        "priceCurrency": "INR"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "ratingCount": "120"
+      }
+    }
+    </script>
+
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- ────────────────────────────────────────────────────────────
+         SEO crawler fallback. React replaces #root entirely on mount,
+         so users with JS never see this. Mirrors the full landing
+         page structure so crawlers without JS (Bing, ChatGPT, social
+         bots, older indexers) can read hero, features, pricing, FAQ,
+         samples and footer navigation.
+    ──────────────────────────────────────────────────────────── */ -->
+    <div id="root">
+      <header>
+        <nav aria-label="Primary">
+          <a href="/" rel="home"><strong>ResumeAlignAI Premium</strong></a>
+          <ul>
+            <li><a href="/builder">Build Resume</a></li>
+            <li><a href="/fresher-builder">Fresher Builder</a></li>
+            <li><a href="/samples">Sample Resumes</a></li>
+            <li><a href="/privacy">Privacy Policy</a></li>
+            <li><a href="/refund-policy">Refund Policy</a></li>
+            <li><a href="/terms">Terms of Service</a></li>
+          </ul>
+        </nav>
+      </header>
+
+      <main>
+        <section id="hero">
+          <h1>Create an ATS-Ready Resume for Any Job in Minutes</h1>
+          <p>Upload your details, add the job description, and ResumeAlignAI will build a professional resume matched with the right keywords.</p>
+          <p>
+            <a href="/builder">Build My Resume Now</a> &middot;
+            <a href="/samples">View Resume Samples</a>
+          </p>
+        </section>
+
+        <section id="benefits">
+          <h2>What ResumeAlignAI delivers</h2>
+          <ul>
+            <li><strong>AI-written resume content</strong> tailored to your target job.</li>
+            <li><strong>ATS keyword matching</strong> against the job description before you apply.</li>
+            <li><strong>Separate flows</strong> for freshers (projects/internships) and experienced (impact bullets).</li>
+            <li><strong>Resume PDF parsing</strong> so you can reuse an existing resume.</li>
+            <li><strong>27 professional templates</strong> ready for recruiters.</li>
+            <li><strong>One-time payment</strong> of Rs.69 to unlock PDF and DOCX download &mdash; no subscription.</li>
+          </ul>
+        </section>
+
+        <section id="ats">
+          <h2>Why ATS scoring matters</h2>
+          <p>Roughly 75% of resumes are filtered out by Applicant Tracking Systems before any human reads them. ResumeAlignAI scores your resume against the actual job description, flags missing keywords, and helps you lift your match score to 95%+ before you submit.</p>
+        </section>
+
+        <section id="pricing">
+          <h2>Simple pricing</h2>
+          <p><strong>Rs.69 per resume</strong> &mdash; one-time, no subscription. Preview free, pay only when you're satisfied and ready to download. Discounted from Rs.299 for the launch period.</p>
+          <p>Each payment unlocks one polished PDF + DOCX download. Regenerating, editing, and switching templates is unlimited and free.</p>
+        </section>
+
+        <section id="samples">
+          <h2>Browse sample resumes</h2>
+          <p>See real AI-generated samples for common roles before you build your own:</p>
+          <ul>
+            <li><a href="/samples">Software Engineer, Data Analyst, Product Manager, Designer, Marketer and more</a></li>
+          </ul>
+        </section>
+
+        <section id="proof">
+          <h2>Trusted by job seekers</h2>
+          <p>12,000+ resumes drafted &middot; 4.9/5 user satisfaction &middot; 88% average ATS lift after optimisation.</p>
+        </section>
+
+        <section id="faq">
+          <h2>Frequently asked questions</h2>
+          <h3>What is an ATS score and why does it matter?</h3>
+          <p>ATS (Applicant Tracking System) is the software most companies use to filter resumes before a recruiter ever reads them. ResumeAlignAI measures how well your resume matches the job description and gives a 0&ndash;100 score. 95+ means you're far more likely to pass the filter.</p>
+          <h3>How many resumes can I download?</h3>
+          <p>Each Rs.69 payment unlocks one PDF + DOCX download. Generate and preview as many times as you like for free &mdash; you only pay when you're satisfied with the final version.</p>
+          <h3>What if my payment fails?</h3>
+          <p>If your payment was deducted but the PDF didn't unlock, contact <a href="mailto:support@resumealignai.online">support@resumealignai.online</a> with your payment reference number. We verify within 24 hours and either unlock the download manually or refund in full.</p>
+          <h3>What payment methods are accepted?</h3>
+          <p>We use Razorpay for secure checkout: UPI (Google Pay, PhonePe, Paytm), debit/credit cards (Visa, Mastercard, RuPay), net banking, and popular wallets.</p>
+          <h3>Does this work for freshers as well as experienced professionals?</h3>
+          <p>Yes &mdash; <a href="/fresher-builder">freshers</a> get a flow built around projects, education, internships, and achievements. <a href="/builder">Experienced professionals</a> get a flow built around impact bullets, career history, and role alignment.</p>
+        </section>
+
+        <section id="contact">
+          <h2>Contact</h2>
+          <address>
+            Support: <a href="mailto:support@resumealignai.online">support@resumealignai.online</a><br>
+            Website: <a href="https://resumealignai.online/">resumealignai.online</a>
+          </address>
+        </section>
+      </main>
+
+      <footer>
+        <nav aria-label="Legal">
+          <ul>
+            <li><a href="/privacy">Privacy Policy</a></li>
+            <li><a href="/refund-policy">Refund Policy</a></li>
+            <li><a href="/terms">Terms of Service</a></li>
+          </ul>
+        </nav>
+        <p>&copy; 2026 ResumeAlignAI Premium &middot; <a href="mailto:support@resumealignai.online">support@resumealignai.online</a></p>
+      </footer>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

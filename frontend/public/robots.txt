@@ -1,0 +1,16 @@
+# ResumeAlignAI — robots.txt
+# https://resumealignai.online
+
+User-agent: *
+Allow: /
+
+# Block private/internal routes
+Disallow: /admin
+Disallow: /api/
+
+# Block crawl of payment + thank-you query params (no indexable content)
+Disallow: /*?paymentId=
+Disallow: /*?accessToken=
+
+# Sitemap
+Sitemap: https://resumealignai.online/sitemap.xml

@@ -1,9 +1,9 @@
 import React from "react";
-import { ChevronLeft, Mail, RotateCcw } from "lucide-react";
+import { ChevronLeft, Mail, Moon, RotateCcw, Sun } from "lucide-react";
 
-const SUPPORT_EMAIL = "resumealignai@resumealignai.online";
+const SUPPORT_EMAIL = "support@resumealignai.online";
 
-export default function RefundPolicy({ onBack }) {
+export default function RefundPolicy({ onBack, theme, onToggleTheme }) {
   return (
     <div className="privacy-page">
       <header className="privacy-hero">
@@ -15,10 +15,22 @@ export default function RefundPolicy({ onBack }) {
               <span>Refund &amp; Cancellation Policy</span>
             </div>
           </button>
-          <button className="builder-back-button" onClick={onBack}>
-            <ChevronLeft aria-hidden="true" />
-            Back to Home
-          </button>
+          <div className="builder-brandbar-actions">
+            {onToggleTheme && (
+              <button
+                className="theme-toggle"
+                onClick={onToggleTheme}
+                aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+            )}
+            <button className="builder-back-button" onClick={onBack}>
+              <ChevronLeft aria-hidden="true" />
+              Back to Home
+            </button>
+          </div>
         </nav>
 
         <div className="privacy-hero-copy">

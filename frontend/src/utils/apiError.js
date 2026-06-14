@@ -15,7 +15,7 @@ const MESSAGES = {
   aiParseFailed:  "The AI returned an unexpected response. Please try generating again.",
   configError:    "AI service is temporarily unavailable. Please try again shortly.",
   paymentFailed:  "Payment was not completed. Please try again or use a different payment method.",
-  paymentVerify:  "Payment verification failed. If you were charged, please contact support at resumealignai@resumealignai.online.",
+  paymentVerify:  "Payment verification failed. If you were charged, please contact support at support@resumealignai.online.",
   generic:        "Something went wrong. Please try again in a moment.",
 };
 

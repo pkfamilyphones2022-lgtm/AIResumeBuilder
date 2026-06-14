@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Manrope:wght@400;500;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Manrope:wght@400;500;600;700;800&display=swap");
 
 :root {
   --bg: #f4f1ea;
@@ -12,12 +12,35 @@
   --accent-strong: #1f9d8f;
   --accent-warm: #d99152;
   --danger: #ba4a3b;
-  color: var(--text);
-  background:
+  --body-bg:
     radial-gradient(circle at top left, rgba(15, 118, 110, 0.11), transparent 28%),
     radial-gradient(circle at 85% 15%, rgba(217, 145, 82, 0.13), transparent 20%),
     linear-gradient(180deg, #f7f4ee 0%, #f1ece3 38%, #f7f4ee 100%);
+  --grid-line: rgba(15, 118, 110, 0.012);
+  --topbar-bg: rgba(255, 255, 255, 0.68);
+  color: var(--text);
+  background: var(--body-bg);
   font-family: "Manrope", sans-serif;
+}
+
+[data-theme="dark"] {
+  --bg: #0b1220;
+  --bg-soft: #121a2c;
+  --panel: rgba(22, 30, 46, 0.72);
+  --panel-solid: #18223a;
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --text: #e7ecf3;
+  --muted: #93a0b5;
+  --accent: #2dd4bf;
+  --accent-strong: #5eead4;
+  --accent-warm: #f5a056;
+  --danger: #f87171;
+  --body-bg:
+    radial-gradient(circle at top left, rgba(45, 212, 191, 0.10), transparent 30%),
+    radial-gradient(circle at 85% 15%, rgba(245, 160, 86, 0.10), transparent 22%),
+    linear-gradient(180deg, #0a1120 0%, #111a2e 45%, #0a1120 100%);
+  --grid-line: rgba(148, 163, 184, 0.05);
+  --topbar-bg: rgba(20, 28, 46, 0.66);
 }
 
 * {
@@ -47,9 +70,9 @@ body {
 
 body::before {
   background-image:
-    linear-gradient(rgba(15, 118, 110, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 118, 110, 0.03) 1px, transparent 1px);
-  background-size: 36px 36px;
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 48px 48px;
   content: "";
   inset: 0;
   pointer-events: none;
@@ -105,20 +128,45 @@ button svg {
 
 .topbar {
   align-items: center;
-  backdrop-filter: blur(18px);
-  background: rgba(255, 255, 255, 0.68);
+  background: transparent;
   border: 1px solid var(--panel-border);
   border-radius: 999px;
   display: flex;
+  gap: 20px;
+  isolation: isolate;
   justify-content: space-between;
   margin-bottom: 28px;
   padding: 12px 18px;
+  position: relative;
+}
+
+/* Glass effect on a pseudo-element so .topbar itself doesn't create a
+   containing block — the mobile drawer (position: fixed) needs to escape
+   to the viewport. */
+.topbar::before {
+  backdrop-filter: blur(12px);
+  background: var(--topbar-bg);
+  border-radius: inherit;
+  content: "";
+  inset: 0;
+  position: absolute;
+  z-index: -1;
 }
 
 .brand-lockup {
   align-items: center;
   display: flex;
   gap: 12px;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.brand-lockup > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
 }
 
 .brand-lockup p,
@@ -129,11 +177,726 @@ button svg {
 .brand-lockup p {
   font-family: "Space Grotesk", sans-serif;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .brand-lockup span {
   color: var(--muted);
+  display: block;
   font-size: 0.8rem;
+  max-width: 28ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Hide the long tagline whenever the topbar gets crowded with nav links + CTAs */
+@media (max-width: 1280px) {
+  .topbar .brand-lockup > div > span {
+    display: none;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   THEME TOGGLE BUTTON
+   ───────────────────────────────────────────── */
+.theme-toggle {
+  align-items: center;
+  background: rgba(15, 118, 110, 0.08);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  color: var(--accent);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 0;
+  height: 40px;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0;
+  transition: background 0.2s ease, transform 0.2s ease, color 0.2s ease;
+  width: 40px;
+}
+
+.theme-toggle:hover {
+  background: rgba(15, 118, 110, 0.16);
+  transform: rotate(-12deg);
+}
+
+[data-theme="dark"] .theme-toggle {
+  background: rgba(45, 212, 191, 0.12);
+  color: var(--accent-strong);
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+  background: rgba(45, 212, 191, 0.22);
+}
+
+/* Dark mode polish — re-skin a few hardcoded surfaces that don't use vars */
+[data-theme="dark"] .promo-inner {
+  background: linear-gradient(90deg, rgba(45, 212, 191, 0.12) 0%, rgba(245, 160, 86, 0.10) 100%);
+  border-color: rgba(45, 212, 191, 0.32);
+  color: var(--text);
+}
+
+[data-theme="dark"] .promo-old {
+  color: var(--muted);
+}
+
+[data-theme="dark"] .scene-card {
+  background: rgba(28, 38, 58, 0.78) !important;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+[data-theme="dark"] .scene-card-top span:first-child,
+[data-theme="dark"] .scene-card h2,
+[data-theme="dark"] .scene-card p,
+[data-theme="dark"] .scene-card strong,
+[data-theme="dark"] .scene-card small {
+  color: var(--text);
+}
+
+[data-theme="dark"] .scene-toast {
+  background: rgba(28, 38, 58, 0.92);
+  color: var(--text);
+}
+
+[data-theme="dark"] .hero-kw-chip {
+  background: rgba(45, 212, 191, 0.14);
+  border-color: rgba(45, 212, 191, 0.3);
+  color: var(--accent-strong);
+}
+
+[data-theme="dark"] .topbar-links a {
+  color: var(--text);
+}
+
+[data-theme="dark"] .topbar-links a:hover {
+  color: var(--accent-strong);
+}
+
+[data-theme="dark"] .hamburger-btn {
+  color: var(--text);
+}
+
+[data-theme="dark"] .stat-card strong,
+[data-theme="dark"] .benefit-card h3,
+[data-theme="dark"] .testimonial-card strong,
+[data-theme="dark"] .upcoming-card h3,
+[data-theme="dark"] .copy-panel h2,
+[data-theme="dark"] .contact-panel h2,
+[data-theme="dark"] .process-steps h3,
+[data-theme="dark"] .section-heading h2,
+[data-theme="dark"] .hero-copy h1,
+[data-theme="dark"] .builder-preview-card h3 {
+  color: var(--text);
+}
+
+[data-theme="dark"] .benefit-card svg,
+[data-theme="dark"] .upcoming-card svg,
+[data-theme="dark"] .testimonial-card svg {
+  color: var(--accent-strong);
+}
+
+[data-theme="dark"] .pricing-card {
+  background: linear-gradient(160deg, rgba(28, 38, 58, 0.92), rgba(20, 30, 50, 0.88));
+  border-color: rgba(45, 212, 191, 0.24);
+  color: var(--text);
+}
+
+[data-theme="dark"] .pricing-card h2,
+[data-theme="dark"] .pricing-card .pricing-sub,
+[data-theme="dark"] .pricing-card .pricing-features li,
+[data-theme="dark"] .pricing-card .pricing-fine {
+  color: var(--text);
+}
+
+[data-theme="dark"] .pricing-new-price {
+  color: var(--accent-strong);
+}
+
+[data-theme="dark"] .faq-item {
+  background: rgba(28, 38, 58, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .faq-question,
+[data-theme="dark"] .faq-answer p {
+  color: var(--text);
+}
+
+[data-theme="dark"] .site-footer {
+  background: rgba(15, 22, 38, 0.7);
+  border-top-color: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+[data-theme="dark"] .site-footer a {
+  color: var(--text);
+}
+
+[data-theme="dark"] .ats-aware-card,
+[data-theme="dark"] .journey-step,
+[data-theme="dark"] .sample-role-card {
+  background: rgba(28, 38, 58, 0.78);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+[data-theme="dark"] .ats-aware-card h2,
+[data-theme="dark"] .ats-aware-card h3,
+[data-theme="dark"] .ats-aware-card p,
+[data-theme="dark"] .journey-step h3,
+[data-theme="dark"] .journey-step p,
+[data-theme="dark"] .sample-role-card h3,
+[data-theme="dark"] .sample-role-card p {
+  color: var(--text);
+}
+
+/* Privacy / Refund / Terms pages */
+[data-theme="dark"] .privacy-page {
+  background: linear-gradient(180deg, #0a1120 0%, #0d1426 100%);
+}
+
+[data-theme="dark"] .privacy-hero {
+  background: linear-gradient(135deg, #134e4a 0%, #0a2e2b 100%);
+}
+
+[data-theme="dark"] .privacy-body {
+  background: #14213a;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  color: var(--text);
+}
+
+[data-theme="dark"] .privacy-body h2,
+[data-theme="dark"] .privacy-body h3,
+[data-theme="dark"] .privacy-body p,
+[data-theme="dark"] .privacy-body li {
+  color: var(--text);
+}
+
+[data-theme="dark"] .privacy-body a {
+  color: var(--accent-strong);
+}
+
+[data-theme="dark"] .privacy-contact {
+  background: rgba(45, 212, 191, 0.08);
+  border-color: rgba(45, 212, 191, 0.2);
+}
+
+[data-theme="dark"] .builder-back-button {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: var(--text);
+}
+
+[data-theme="dark"] .builder-back-button:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* ─────────────────────────────────────────────
+   FORM FIELD PLACEHOLDERS — consistent across all inputs
+   uses --muted so contrast adapts to theme
+   ───────────────────────────────────────────── */
+::placeholder {
+  color: var(--muted);
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+::-webkit-input-placeholder { color: var(--muted); opacity: 0.7; }
+::-moz-placeholder          { color: var(--muted); opacity: 0.7; }
+:-ms-input-placeholder      { color: var(--muted); opacity: 0.7; }
+
+[data-theme="dark"] ::placeholder {
+  opacity: 0.62;
+}
+
+/* ─────────────────────────────────────────────
+   DARK MODE — fix invisible text / form panels
+   ───────────────────────────────────────────── */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.18);
+}
+
+[data-theme="dark"] select option {
+  background: var(--panel-solid);
+  color: var(--text);
+}
+
+[data-theme="dark"] label {
+  color: var(--text);
+}
+
+[data-theme="dark"] .form-empty-hint {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+}
+
+[data-theme="dark"] .form-section,
+[data-theme="dark"] .builder-shell,
+[data-theme="dark"] .builder-panel,
+[data-theme="dark"] .result-panel {
+  background: var(--panel);
+  border-color: var(--panel-border);
+  color: var(--text);
+}
+
+[data-theme="dark"] .form-section h2,
+[data-theme="dark"] .form-section h3,
+[data-theme="dark"] .form-section p,
+[data-theme="dark"] .builder-panel h2,
+[data-theme="dark"] .builder-panel h3,
+[data-theme="dark"] .builder-panel p,
+[data-theme="dark"] .result-panel h2,
+[data-theme="dark"] .result-panel h3,
+[data-theme="dark"] .result-panel p {
+  color: var(--text);
+}
+
+/* Email confirm modal */
+[data-theme="dark"] .email-delivery-modal {
+  background: var(--panel-solid);
+  color: var(--text);
+}
+
+[data-theme="dark"] .email-delivery-modal h2,
+[data-theme="dark"] .email-delivery-modal h3,
+[data-theme="dark"] .email-delivery-modal p,
+[data-theme="dark"] .email-delivery-note span {
+  color: var(--text);
+}
+
+[data-theme="dark"] .email-delivery-modal .email-confirm-address {
+  background: rgba(45, 212, 191, 0.12);
+  border-color: rgba(45, 212, 191, 0.3);
+  color: var(--text);
+}
+
+[data-theme="dark"] .email-confirm-input {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: var(--text);
+}
+
+/* ATS result + suggestion panels */
+[data-theme="dark"] .ats-result,
+[data-theme="dark"] .ats-suggestion,
+[data-theme="dark"] .ai-verification-panel,
+[data-theme="dark"] .line-checks,
+[data-theme="dark"] .security-check {
+  background: var(--panel);
+  border-color: var(--panel-border);
+  color: var(--text);
+}
+
+[data-theme="dark"] .ats-result h2,
+[data-theme="dark"] .ats-result h3,
+[data-theme="dark"] .ats-result p,
+[data-theme="dark"] .ats-result li,
+[data-theme="dark"] .ats-gap-label,
+[data-theme="dark"] .ai-verification-panel p,
+[data-theme="dark"] .line-checks summary,
+[data-theme="dark"] .security-check label,
+[data-theme="dark"] .security-check p {
+  color: var(--text);
+}
+
+[data-theme="dark"] .security-check button {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: var(--text);
+}
+
+/* Catch-all safety net for any remaining dark text on dark cards */
+[data-theme="dark"] .copy-panel p,
+[data-theme="dark"] .process-panel p,
+[data-theme="dark"] .contact-panel p,
+[data-theme="dark"] .benefit-card p,
+[data-theme="dark"] .testimonial-card p,
+[data-theme="dark"] .upcoming-card p {
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────
+   DARK MODE — exhaustive text visibility sweep
+   Every hardcoded dark UI color is remapped to a
+   light/lighter variant. The resume preview canvas
+   (.resume-*, .rz-luxe-*, .rz-single-*, .rz-minimal-*,
+   .rz-exec-*) is intentionally NOT included because
+   it simulates printed paper and stays dark.
+   ───────────────────────────────────────────── */
+
+/* Teal accents (#0f766e family) → lighter accent */
+[data-theme="dark"] .faq-question:hover,
+[data-theme="dark"] .faq-open .faq-question,
+[data-theme="dark"] .faq-chevron,
+[data-theme="dark"] .mandatory-info-banner svg,
+[data-theme="dark"] .rgl-cursor,
+[data-theme="dark"] .rgl-progress-pct,
+[data-theme="dark"] .sample-role-cat[data-type="Fresher"],
+[data-theme="dark"] .srb-badge[data-type="Fresher"],
+[data-theme="dark"] .file-email-status.sent,
+[data-theme="dark"] .modal-mail-icon,
+[data-theme="dark"] .ats-aware-cta-row,
+[data-theme="dark"] .rgl-progress strong,
+[data-theme="dark"] .builder-price-card .price-label,
+[data-theme="dark"] .build-cta-strong,
+[data-theme="dark"] .builder-offer-banner,
+[data-theme="dark"] .ats-required-summary,
+[data-theme="dark"] .sample-role-btn {
+  color: var(--accent-strong);
+}
+
+/* Dark navy / text colors → light text */
+[data-theme="dark"] .rgl-identity,
+[data-theme="dark"] .rgl-identity strong,
+[data-theme="dark"] .rgl-progress span,
+[data-theme="dark"] .ats-gap-label,
+[data-theme="dark"] .ats-kw-source,
+[data-theme="dark"] .ats-summary,
+[data-theme="dark"] .modal-box,
+[data-theme="dark"] .modal-box h2,
+[data-theme="dark"] .modal-box h3,
+[data-theme="dark"] .modal-box p,
+[data-theme="dark"] .modal-intro,
+[data-theme="dark"] .modal-warning,
+[data-theme="dark"] .modal-warning h3,
+[data-theme="dark"] .modal-warning p,
+[data-theme="dark"] .field-label,
+[data-theme="dark"] .ats-check-item,
+[data-theme="dark"] .ats-check-item span,
+[data-theme="dark"] .ats-suggestion-section + p,
+[data-theme="dark"] .ai-verification-panel,
+[data-theme="dark"] .ai-verification-panel strong {
+  color: var(--text);
+}
+
+/* Modal / dialog surfaces */
+[data-theme="dark"] .modal-box,
+[data-theme="dark"] .modal-warning {
+  background: var(--panel-solid);
+  border-color: var(--panel-border);
+}
+
+/* Amber / warning text (#b45309, #92400e, #78350f, #7c2d12) → keep warm but readable */
+[data-theme="dark"] .ats-reject-icon,
+[data-theme="dark"] .ats-card-header span,
+[data-theme="dark"] .ats-meter-row b,
+[data-theme="dark"] .ats-stat-card strong,
+[data-theme="dark"] .modal-warn-icon,
+[data-theme="dark"] .ats-label,
+[data-theme="dark"] .ats-bullet,
+[data-theme="dark"] .file-email-status.failed,
+[data-theme="dark"] .ats-required-terms .term-missing,
+[data-theme="dark"] .importance-medium,
+[data-theme="dark"] .returning-discount-banner strong,
+[data-theme="dark"] .builder-offer-banner em {
+  color: var(--accent-warm);
+}
+
+/* Blue accents (#1d4ed8) → lighter blue for dark mode */
+[data-theme="dark"] .file-email-status.sending,
+[data-theme="dark"] .sample-role-cat[data-type="Experienced"],
+[data-theme="dark"] .srb-badge[data-type="Experienced"],
+[data-theme="dark"] .rz-luxe-strip span {
+  color: #93c5fd;
+}
+
+/* Purple accents (#5b21b6) → lighter purple */
+[data-theme="dark"] .ats-kw-ai,
+[data-theme="dark"] .ats-suggestion-section {
+  color: #c4b5fd;
+}
+
+/* Green pass states (#16a34a, #166534, #15803d) → kept green but lighter for contrast */
+[data-theme="dark"] .ats-pass-label,
+[data-theme="dark"] .ats-guidance-text.good-guidance,
+[data-theme="dark"] .ats-check-item.is-pass svg,
+[data-theme="dark"] .ats-required-terms .term-present,
+[data-theme="dark"] .ats-check-item.is-pass .importance-high,
+[data-theme="dark"] .ats-check-item.is-pass .importance-medium,
+[data-theme="dark"] .ats-kw-check {
+  color: #6ee7b7;
+}
+
+/* Light-bg containers in light mode → translucent dark bg in dark mode */
+[data-theme="dark"] .ats-guidance-text.good-guidance {
+  background: rgba(110, 231, 183, 0.1);
+}
+
+[data-theme="dark"] .ats-required-terms .term-missing {
+  background: rgba(245, 160, 86, 0.12);
+}
+
+[data-theme="dark"] .ats-required-terms .term-present {
+  background: rgba(110, 231, 183, 0.12);
+}
+
+[data-theme="dark"] .file-email-status.sending {
+  background: rgba(147, 197, 253, 0.1);
+  border-color: rgba(147, 197, 253, 0.3);
+}
+
+[data-theme="dark"] .file-email-status.failed {
+  background: rgba(245, 160, 86, 0.12);
+  border-color: rgba(245, 160, 86, 0.4);
+}
+
+/* Builder mode toggle (Fresher/Experienced) */
+[data-theme="dark"] .builder-mode-links {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .builder-mode-links button {
+  color: var(--muted);
+}
+
+[data-theme="dark"] .builder-mode-links button.is-active {
+  background: var(--panel-solid);
+  color: var(--accent-strong);
+  box-shadow: 0 8px 18px rgba(45, 212, 191, 0.15);
+}
+
+/* Returning discount banner & builder offer banner */
+[data-theme="dark"] .returning-discount-banner,
+[data-theme="dark"] .builder-offer-banner {
+  background: rgba(245, 160, 86, 0.12);
+  border-color: rgba(245, 160, 86, 0.3);
+}
+
+[data-theme="dark"] .builder-offer-banner small {
+  color: rgba(245, 160, 86, 0.75);
+}
+
+[data-theme="dark"] .builder-offer-banner strong {
+  color: var(--text);
+}
+
+/* Email confirm address chip (#134e4a on #f0fdf9) */
+[data-theme="dark"] .email-confirm-address {
+  background: rgba(45, 212, 191, 0.12);
+  border-color: rgba(45, 212, 191, 0.3);
+  color: var(--text);
+}
+
+/* Promo banner old price */
+[data-theme="dark"] .promo-old {
+  color: var(--muted);
+}
+
+[data-theme="dark"] .promo-text,
+[data-theme="dark"] .promo-divider {
+  color: var(--text);
+}
+
+/* FAQ items */
+[data-theme="dark"] .faq-question {
+  color: var(--text);
+}
+
+/* Generic small/strong fallbacks within already-dark-mode-overridden panels */
+[data-theme="dark"] .stat-card p,
+[data-theme="dark"] .ats-stat-card p,
+[data-theme="dark"] .ats-card-header strong,
+[data-theme="dark"] .builder-preview-card p {
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────
+   DARK MODE — override inline style="color: …"
+   The journey "tag" labels and sample-role buttons
+   are set via React inline style with hardcoded brand
+   colors (#0f766e, #4338ca, #b45309, #166534, etc.).
+   These need !important to win over inline styles.
+   ───────────────────────────────────────────── */
+[data-theme="dark"] .journey-tag,
+[data-theme="dark"] .sample-role-btn {
+  color: var(--accent-strong) !important;
+}
+
+[data-theme="dark"] .sample-role-btn {
+  border-color: rgba(45, 212, 191, 0.4) !important;
+}
+
+/* Journey icon tinted backgrounds — inline style sets a 9% alpha tint of
+   the brand color. On dark cards that tint is nearly black. Brighten it. */
+[data-theme="dark"] .journey-icon-wrap {
+  background: rgba(45, 212, 191, 0.14) !important;
+}
+
+[data-theme="dark"] .journey-icon-wrap svg {
+  color: var(--accent-strong) !important;
+}
+
+/* Strike-through old price (inline color: #888 on hero PDF card) */
+[data-theme="dark"] .scene-card-bottom span[style*="line-through"] {
+  color: var(--muted) !important;
+}
+
+/* Hero ATS-aware kicker uses inline color: "#b45309". On dark bg amber
+   reads OK already, but bump it to accent-warm for consistency. */
+[data-theme="dark"] .ats-awareness-section .hero-kicker {
+  color: var(--accent-warm) !important;
+}
+
+/* Sample card outer (uses --role-color via inline style for accents) */
+[data-theme="dark"] .sample-role-card {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Hero copy text — keep h1 and lists readable, keep buttons untouched */
+[data-theme="dark"] .hero-copy h1,
+[data-theme="dark"] .hero-copy .hero-checks li {
+  color: var(--text);
+}
+
+[data-theme="dark"] .hero-copy .hero-text {
+  color: var(--muted);
+}
+
+[data-theme="dark"] .stats-strip .stat-card p {
+  color: var(--muted);
+}
+
+[data-theme="dark"] .stats-strip .stat-card strong {
+  color: var(--text);
+}
+
+/* Samples page sidebar (uses inline brand colors on srb-icon and references
+   undefined --text-muted variable that falls back to hardcoded gray) */
+[data-theme="dark"] .samples-sidebar,
+[data-theme="dark"] .samples-shell {
+  background: rgba(28, 38, 58, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .samples-role-btn {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+}
+
+[data-theme="dark"] .samples-role-btn:hover {
+  background: rgba(45, 212, 191, 0.08);
+  border-color: rgba(45, 212, 191, 0.25);
+}
+
+[data-theme="dark"] .samples-role-btn.is-active {
+  background: linear-gradient(135deg, rgba(45, 212, 191, 0.16), rgba(45, 212, 191, 0.06));
+  border-color: rgba(45, 212, 191, 0.4);
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.1);
+}
+
+[data-theme="dark"] .srb-icon {
+  background: rgba(45, 212, 191, 0.14) !important;
+  color: var(--accent-strong) !important;
+}
+
+[data-theme="dark"] .srb-title {
+  color: var(--text);
+}
+
+[data-theme="dark"] .srb-desc,
+[data-theme="dark"] .samples-sidebar-label,
+[data-theme="dark"] .samples-sidebar-cta p {
+  color: var(--muted);
+}
+
+[data-theme="dark"] .samples-preview-area {
+  background: rgba(28, 38, 58, 0.5);
+}
+
+[data-theme="dark"] .samples-preview-label,
+[data-theme="dark"] .samples-preview-meta strong,
+[data-theme="dark"] .samples-preview-meta span {
+  color: var(--text);
+}
+
+[data-theme="dark"] .samples-watermark-badge {
+  background: rgba(245, 160, 86, 0.16);
+  color: var(--accent-warm);
+  border-color: rgba(245, 160, 86, 0.3);
+}
+
+/* Samples landing-page role grid (inline borderColor and color from sampleResumes data) */
+[data-theme="dark"] .sample-role-card {
+  --role-color: var(--accent-strong);
+}
+
+/* ─────────────────────────────────────────────
+   BUILDER WORKSPACE HEAD — white card stays white
+   in dark mode (premium panel feel), so all text
+   inside must keep its light-mode dark colors.
+   ───────────────────────────────────────────── */
+[data-theme="dark"] .builder-workspace-head {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(16, 42, 67, 0.12);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+  color: #132238;
+}
+
+[data-theme="dark"] .builder-workspace-head .builder-copy .hero-kicker {
+  color: #0f766e;
+}
+
+[data-theme="dark"] .builder-workspace-head .builder-copy h1 {
+  color: #132238;
+}
+
+[data-theme="dark"] .builder-workspace-head .builder-copy .hero-text,
+[data-theme="dark"] .builder-workspace-head .builder-copy p {
+  color: #5b6b80;
+}
+
+/* Builder mode toggle when sitting on white workspace head */
+[data-theme="dark"] .builder-workspace-head .builder-mode-links {
+  background: #f4f7f5;
+  border-color: rgba(19, 34, 56, 0.1);
+}
+
+[data-theme="dark"] .builder-workspace-head .builder-mode-links button {
+  color: #5b6b80;
+}
+
+[data-theme="dark"] .builder-workspace-head .builder-mode-links button.is-active {
+  background: #ffffff;
+  color: #0f766e;
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.12);
+}
+
+/* Builder badges below workspace head — same white-on-white treatment */
+[data-theme="dark"] .builder-badges span {
+  background: rgba(15, 118, 110, 0.1);
+  border-color: rgba(15, 118, 110, 0.16);
+  color: #132238;
+}
+
+[data-theme="dark"] .builder-badges svg {
+  color: #0f766e;
+}
+
+/* Builder page outer container — let the existing light gradient show through
+   since the workspace head & form sit on it as premium light panels */
+[data-theme="dark"] .builder-page {
+  background:
+    linear-gradient(180deg, rgba(11, 18, 32, 0.96) 0%, rgba(17, 26, 46, 0.98) 100%),
+    radial-gradient(circle at 8% 14%, rgba(45, 212, 191, 0.15), transparent 26%),
+    radial-gradient(circle at 88% 6%, rgba(245, 160, 86, 0.13), transparent 24%);
 }
 
 .brand-mark {
@@ -143,12 +906,14 @@ button svg {
   color: #ffffff;
   display: inline-flex;
   font-family: "Space Grotesk", sans-serif;
-  font-size: 1rem;
-  font-weight: 800;
+  font-size: 1.5rem;
+  font-weight: 700;
   height: 42px;
   justify-content: center;
+  line-height: 1;
   width: 42px;
 }
+
 
 .brand-lockup p .brand-premium-badge {
   background: linear-gradient(135deg, #f5d56b 0%, #c79a2b 55%, #a37414 100%);
@@ -164,6 +929,22 @@ button svg {
   padding: 2px 8px;
   text-transform: uppercase;
   vertical-align: middle;
+}
+
+.topbar-cluster {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.builder-brandbar-actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-self: end;
 }
 
 .topbar-links {
@@ -361,7 +1142,7 @@ button svg {
   display: block;
   font-family: "Space Grotesk", sans-serif;
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.3;
   white-space: nowrap;
 }
@@ -576,7 +1357,7 @@ button svg {
   border: 1px solid var(--panel-border);
   border-radius: 8px;
   box-shadow: 0 4px 24px rgba(31, 45, 61, 0.08);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(10px);
 }
 
 .builder-price-card {
@@ -584,7 +1365,7 @@ button svg {
   border: 1.5px solid rgba(15, 118, 110, 0.22);
   border-radius: 20px;
   box-shadow: 0 16px 52px rgba(15, 118, 110, 0.14);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(10px);
 }
 
 .stat-card {
@@ -791,7 +1572,7 @@ button svg {
   display: inline-flex;
   font-family: "Space Grotesk", sans-serif;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
   height: 30px;
   justify-content: center;
   width: 30px;
@@ -896,7 +1677,7 @@ button svg {
   color: var(--accent);
   font-family: "Space Grotesk", sans-serif;
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
 }
 .pricing-new-price span {
@@ -908,7 +1689,7 @@ button svg {
   color: #fff;
   font-family: "Space Grotesk", sans-serif;
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 700;
   padding: 4px 12px;
 }
 .pricing-sub {
@@ -1078,7 +1859,7 @@ button svg {
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 999px;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.08em;
   padding: 6px 10px;
 }
@@ -1637,7 +2418,7 @@ textarea:focus {
   content: "RESUMEALIGNAI PREVIEW";
   font-family: "Space Grotesk", sans-serif;
   font-size: 4.2rem;
-  font-weight: 900;
+  font-weight: 700;
   left: 50%;
   letter-spacing: 0.12em;
   line-height: 1.15;
@@ -2272,7 +3053,7 @@ textarea:focus {
 .ats-ring-score {
   font-family: "Space Grotesk", sans-serif;
   font-size: 2.2rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -2759,7 +3540,7 @@ textarea:focus {
 
 .required-star {
   color: var(--danger);
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .mandatory-info-banner {
@@ -3622,7 +4403,7 @@ li {
   color: var(--text);
   font-family: "Space Grotesk", sans-serif;
   font-size: 1.05rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .rgl-role-chip {
@@ -4282,7 +5063,7 @@ li {
   display: block;
   font-family: "Space Grotesk", sans-serif;
   font-size: 2.2rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   margin-bottom: 8px;
 }
@@ -5034,7 +5815,7 @@ li {
   border-radius: 999px;
   display: inline-block;
   font-size: 0.74rem;
-  font-weight: 900;
+  font-weight: 800;
   padding: 5px 9px;
   text-transform: uppercase;
   width: fit-content;

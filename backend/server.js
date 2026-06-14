@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import resumeRoutes from "./routes/resumeRoutes.js";
 import { getDb } from "./db/setup.js";
 import { verifyEmailTransport } from "./services/emailService.js";
+import { scheduleBackup } from "./services/backupService.js";
 
 // Env is loaded via `node --env-file=.env` in package.json scripts.
 
@@ -163,4 +164,5 @@ app.use((err, _req, res, _next) => {
 
 app.listen(PORT, () => {
   console.log(`[server] Listening on port ${PORT} (${process.env.NODE_ENV || "development"})`);
+  scheduleBackup();
 });

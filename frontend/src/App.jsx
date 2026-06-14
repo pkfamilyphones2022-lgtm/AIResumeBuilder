@@ -18,10 +18,12 @@ import {
   LayoutTemplate,
   Mail,
   Menu,
+  Moon,
   ScanSearch,
   ShieldCheck,
   Sparkles,
   Star,
+  Sun,
   Target,
   TrendingUp,
   Users,
@@ -223,7 +225,7 @@ const atsRejectionReasons = [
 const faqs = [
   {
     q: "What if my payment fails?",
-    a: "If your payment was deducted but the PDF didn't unlock, contact us at resumealignai@resumealignai.online with your payment reference number. We'll verify within 24 hours and either manually unlock your download or process a full refund — no questions asked."
+    a: "If your payment was deducted but the PDF didn't unlock, contact us at support@resumealignai.online with your payment reference number. We'll verify within 24 hours and either manually unlock your download or process a full refund — no questions asked."
   },
   {
     q: "How many resumes can I download?",
@@ -264,12 +266,10 @@ const faqs = [
 ];
 
 const heroKeywords = [
-  { label: "React.js",    top: "6%",  left: "72%", delay: 0.8 },
-  { label: "Python",      top: "18%", left: "3%",  delay: 1.4 },
-  { label: "SQL",         top: "70%", left: "76%", delay: 2.0 },
-  { label: "Leadership",  top: "80%", left: "30%", delay: 2.6 },
-  { label: "Node.js",     top: "-4%", left: "36%", delay: 1.1 },
-  { label: "ATS Ready", top: "55%", left: "-2%", delay: 3.2 },
+  { label: "React.js",   top: "6%",  left: "72%", delay: 0.8 },
+  { label: "Python",     top: "18%", left: "3%",  delay: 1.4 },
+  { label: "Leadership", top: "78%", left: "70%", delay: 2.2 },
+  { label: "ATS Ready",  top: "55%", left: "-2%", delay: 3.0 },
 ];
 
 function FaqItem({ question, answer, isOpen, onToggle }) {
@@ -340,6 +340,39 @@ function usePathname() {
   return [pathname, setPathname];
 }
 
+const THEME_KEY = "raa_theme";
+
+function useTheme() {
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem(THEME_KEY) || "light";
+    } catch {
+      return "light";
+    }
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem(THEME_KEY, theme); } catch {}
+  }, [theme]);
+
+  const toggle = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+  return [theme, toggle];
+}
+
+function ThemeToggle({ theme, onToggle }) {
+  return (
+    <button
+      className="theme-toggle"
+      onClick={onToggle}
+      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
+  );
+}
+
 function navigateTo(path, setPathname) {
   window.history.pushState({}, "", path);
   setPathname(window.location.pathname);
@@ -379,6 +412,7 @@ function AnimatedWords({ words = [], interval = 2200 }) {
 
 export default function App() {
   const [pathname, setPathname] = usePathname();
+  const [theme, toggleTheme] = useTheme();
   const isBuilderPage = pathname === "/builder" || pathname === "/fresher-builder";
   const isFresherBuilder = pathname === "/fresher-builder";
   const isSamplesPage = pathname === "/samples";
@@ -410,15 +444,15 @@ export default function App() {
   }
 
   if (isPrivacyPage) {
-    return <PrivacyPolicy onBack={() => navigateTo("/", setPathname)} />;
+    return <PrivacyPolicy onBack={() => navigateTo("/", setPathname)} theme={theme} onToggleTheme={toggleTheme} />;
   }
 
   if (isRefundPage) {
-    return <RefundPolicy onBack={() => navigateTo("/", setPathname)} />;
+    return <RefundPolicy onBack={() => navigateTo("/", setPathname)} theme={theme} onToggleTheme={toggleTheme} />;
   }
 
   if (isTermsPage) {
-    return <TermsOfService onBack={() => navigateTo("/", setPathname)} />;
+    return <TermsOfService onBack={() => navigateTo("/", setPathname)} theme={theme} onToggleTheme={toggleTheme} />;
   }
 
   if (isBuilderPage) {
@@ -441,10 +475,13 @@ export default function App() {
               </div>
             </button>
 
-            <button className="builder-back-button" onClick={() => navigateTo("/", setPathname)}>
-              <ChevronLeft aria-hidden="true" />
-              Back to Landing
-            </button>
+            <div className="builder-brandbar-actions">
+              <ThemeToggle theme={theme} onToggle={toggleTheme} />
+              <button className="builder-back-button" onClick={() => navigateTo("/", setPathname)}>
+                <ChevronLeft aria-hidden="true" />
+                Back to Landing
+              </button>
+            </div>
           </nav>
 
           <motion.div
@@ -556,15 +593,17 @@ export default function App() {
             </div>
           </a>
 
-          <button
-            className="hamburger-btn"
-            onClick={() => setMobileNavOpen((o) => !o)}
-            aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
-          >
-            {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          <div className="topbar-cluster">
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            <button
+              className="hamburger-btn"
+              onClick={() => setMobileNavOpen((o) => !o)}
+              aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
+            >
+              {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
 
-          <div className={`topbar-links ${mobileNavOpen ? "is-open" : ""}`}>
+            <div className={`topbar-links ${mobileNavOpen ? "is-open" : ""}`}>
             <div className="nav-mobile-header">
               <span>Menu</span>
               <button className="hamburger-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
@@ -586,6 +625,7 @@ export default function App() {
             <button className="topbar-cta" onClick={() => { setMobileNavOpen(false); navigateTo("/builder", setPathname); }}>
               Experienced Builder
             </button>
+            </div>
           </div>
 
           <div
@@ -600,27 +640,24 @@ export default function App() {
               Premium AI resume crafting for serious job seekers
             </motion.p>
             <motion.h1 custom={1} variants={fadeUp}>
-              Craft a premium, ATS-aligned resume and export a recruiter-ready PDF in minutes.
+              Create an ATS-Ready Resume for Any Job in Minutes
             </motion.h1>
             <motion.p className="hero-text" custom={2} variants={fadeUp}>
-              This product helps job seekers upload an old resume, add career details, match a target job
-              description, and generate a stronger version with measurable bullet points.
+              Upload your details, add the job description, and ResumeAlignAI will build a professional
+              resume matched with the right keywords.
             </motion.p>
 
             <AnimatedWords words={animatedPhrases} interval={2200} />
 
             <motion.div className="hero-actions" custom={3} variants={fadeUp}>
-              <button className="hero-primary" onClick={() => navigateTo("/fresher-builder", setPathname)}>
-                Fresher Resume
+              <button className="hero-primary" onClick={() => navigateTo("/builder", setPathname)}>
+                Build My Resume Now
                 <ArrowRight aria-hidden="true" />
               </button>
-              <button className="hero-secondary" onClick={() => navigateTo("/builder", setPathname)}>
-                Experienced Resume
+              <button className="hero-secondary" onClick={() => navigateTo("/samples", setPathname)}>
+                View Resume Samples
                 <ArrowRight aria-hidden="true" />
               </button>
-              <a className="hero-secondary" href="#proof">
-                See Customer Results
-              </a>
             </motion.div>
 
             <motion.ul className="hero-checks" custom={4} variants={fadeUp}>
@@ -646,15 +683,10 @@ export default function App() {
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="hero-scene">
-              {/* Orbiting rings */}
+              {/* Single orbit ring — kept for ambient motion */}
               <motion.div
                 className="scene-orbit orbit-one"
                 animate={{ rotate: 360 }}
-                transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
-              />
-              <motion.div
-                className="scene-orbit orbit-two"
-                animate={{ rotate: -360 }}
                 transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
               />
 
@@ -1325,9 +1357,9 @@ export default function App() {
           <p>Contact details</p>
           <h2>Keep a clear way for interested users to reach the team.</h2>
           <div className="contact-grid">
-            <a href="mailto:resumealignai@resumealignai.online">
+            <a href="mailto:support@resumealignai.online">
               <Mail aria-hidden="true" />
-              resumealignai@resumealignai.online
+              support@resumealignai.online
             </a>
           </div>
         </motion.div>
@@ -1404,7 +1436,7 @@ export default function App() {
             </a>
           </nav>
           <p className="site-footer-meta">
-            &copy; 2026 ResumeAlignAI · Premium AI resume service · <a href="mailto:resumealignai@resumealignai.online">resumealignai@resumealignai.online</a>
+            &copy; 2026 ResumeAlignAI · Premium AI resume service · <a href="mailto:support@resumealignai.online">support@resumealignai.online</a>
           </p>
         </div>
       </footer>
