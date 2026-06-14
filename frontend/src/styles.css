@@ -905,13 +905,17 @@ button svg {
   border-radius: 8px;
   color: #ffffff;
   display: inline-flex;
-  font-family: "Space Grotesk", sans-serif;
-  font-size: 1.5rem;
+  font-family: "Space Grotesk", "Arial Black", system-ui, sans-serif;
+  font-size: 1.6rem;
   font-weight: 700;
   height: 42px;
   justify-content: center;
+  letter-spacing: -0.01em;
   line-height: 1;
   width: 42px;
+  /* Prevent FOIT (Flash Of Invisible Text) — fall back instantly while
+     Space Grotesk loads, then swap in the web font when it's ready. */
+  font-display: swap;
 }
 
 

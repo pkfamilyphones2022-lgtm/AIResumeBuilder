@@ -308,15 +308,23 @@ const buildRouteHtml = (route) => {
     `<meta name="twitter:description" content="${route.description}" />`
   );
 
-  // Replace #root fallback content with route-specific content. Vite moves
-  // module scripts into <head> during build, so we anchor on </body> instead
-  // of the (no-longer-adjacent) module script tag.
-  const rootRegex = /<div id="root">[\s\S]*?<\/div>(\s*<\/body>)/;
+  // Replace #root fallback content with route-specific content. The base
+  // index.html wraps fallback in <div id="seo-fallback"> so JS-enabled users
+  // see it hidden via inline CSS. Vite moves module scripts into <head>
+  // during build, so we anchor on </body> instead of the (no-longer-adjacent)
+  // module script tag.
+  const rootRegex = /<div id="root">[\s\S]*?<\/div>\s*<\/div>(\s*<\/body>)/;
   if (!rootRegex.test(html)) {
-    console.warn(`[prerender] WARNING: #root replacement regex did not match for ${route.path}`);
-    return html;
+    // Fall back to the older single-div pattern in case index.html structure changes.
+    const fallbackRegex = /<div id="root">[\s\S]*?<\/div>(\s*<\/body>)/;
+    if (!fallbackRegex.test(html)) {
+      console.warn(`[prerender] WARNING: #root replacement regex did not match for ${route.path}`);
+      return html;
+    }
+    html = html.replace(fallbackRegex, `<div id="root"><div id="seo-fallback">${route.content}</div></div>$1`);
+  } else {
+    html = html.replace(rootRegex, `<div id="root"><div id="seo-fallback">${route.content}</div></div>$1`);
   }
-  html = html.replace(rootRegex, `<div id="root">${route.content}</div>$1`);
 
   return html;
 };

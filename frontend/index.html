@@ -15,6 +15,23 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
+    <!-- Critical inline CSS — prevents the white unstyled flash before the
+         main bundle's CSS loads, and hides the SEO fallback content for
+         JS-enabled users. Crawlers without JS see the fallback in raw HTML. -->
+    <script>document.documentElement.setAttribute('data-js-on','1');</script>
+    <style>
+      html, body {
+        background: #f4f1ea;
+        color: #132238;
+        font-family: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        margin: 0;
+        min-height: 100vh;
+      }
+      /* Hide the SEO fallback for real users — crawlers without JS still see it
+         because they typically don't execute inline scripts. */
+      html[data-js-on] #seo-fallback { display: none; }
+    </style>
+
     <!-- Primary SEO -->
     <title>Create an ATS-Ready Resume for Any Job in Minutes — ResumeAlignAI</title>
     <meta name="description" content="Upload your details, add a job description, and ResumeAlignAI builds a professional ATS-aligned resume matched with the right keywords. Rs.69 per resume." />
@@ -64,12 +81,13 @@
   <body>
     <!-- ────────────────────────────────────────────────────────────
          SEO crawler fallback. React replaces #root entirely on mount,
-         so users with JS never see this. Mirrors the full landing
-         page structure so crawlers without JS (Bing, ChatGPT, social
-         bots, older indexers) can read hero, features, pricing, FAQ,
-         samples and footer navigation.
+         so users with JS never see this (hidden by inline CSS above).
+         Mirrors the full landing page structure so crawlers without
+         JS (Bing, ChatGPT, social bots, older indexers) can read
+         hero, features, pricing, FAQ, samples and footer navigation.
     ──────────────────────────────────────────────────────────── */ -->
     <div id="root">
+      <div id="seo-fallback">
       <header>
         <nav aria-label="Primary">
           <a href="/" rel="home"><strong>ResumeAlignAI Premium</strong></a>
@@ -163,6 +181,7 @@
         </nav>
         <p>&copy; 2026 ResumeAlignAI Premium &middot; <a href="mailto:support@resumealignai.online">support@resumealignai.online</a></p>
       </footer>
+      </div>
     </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
