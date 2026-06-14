@@ -1011,9 +1011,16 @@ button svg {
 .brand-home-link {
   background: none;
   border: none;
+  color: inherit;
   cursor: pointer;
   padding: 0;
   text-align: left;
+  text-decoration: none;
+}
+
+.brand-home-link:hover {
+  color: inherit;
+  text-decoration: none;
 }
 
 .builder-brand-lockup .brand-mark {

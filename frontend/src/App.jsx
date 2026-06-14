@@ -543,13 +543,18 @@ export default function App() {
         variants={fadeUp}
       >
         <nav className="topbar">
-          <div className="brand-lockup">
+          <a
+            className="brand-lockup brand-home-link"
+            href="/"
+            onClick={(e) => { e.preventDefault(); navigateTo("/", setPathname); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            aria-label="ResumeAlignAI home"
+          >
             <span className="brand-mark">R</span>
             <div>
               <p>ResumeAlignAI <span className="brand-premium-badge">Premium</span></p>
               <span>Premium AI resumes, aligned to your target role</span>
             </div>
-          </div>
+          </a>
 
           <button
             className="hamburger-btn"
@@ -1362,13 +1367,18 @@ export default function App() {
 
       <footer className="site-footer">
         <div className="site-footer-inner">
-          <div className="site-footer-brand">
+          <a
+            className="site-footer-brand brand-home-link"
+            href="/"
+            onClick={(e) => { e.preventDefault(); navigateTo("/", setPathname); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            aria-label="ResumeAlignAI home"
+          >
             <span className="brand-mark">R</span>
             <div>
               <p>ResumeAlignAI <span className="brand-premium-badge">Premium</span></p>
               <span>Premium AI resumes, aligned to your target role</span>
             </div>
-          </div>
+          </a>
           <nav className="site-footer-links">
             <a href="#benefits">Benefits</a>
             <a href="#features">Features</a>

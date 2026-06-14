@@ -221,6 +221,24 @@ const fromAddress = () =>
     ? "ResumeAlignAI <test@resumeai.app>"
     : process.env.EMAIL_FROM || `ResumeAlignAI <${process.env.EMAIL_USER}>`;
 
+// Public website URL — used inside email templates to link the logo and CTA.
+const appUrl = () => process.env.APP_URL || "https://resumealignai.online";
+
+// Re-usable inline-styled "Visit website" block (added near the bottom of every email).
+const websiteCta = () => {
+  const url = appUrl();
+  return `
+    <div style="background:#f0fdf9;border:1px solid #99f6e4;border-radius:10px;padding:16px 20px;margin:0 0 20px;text-align:center;">
+      <p style="color:#0f766e;font-size:13px;font-weight:700;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.05em;">Visit ResumeAlignAI</p>
+      <a href="${url}" target="_blank" rel="noopener" style="color:#ffffff;background:#0f766e;border-radius:8px;display:inline-block;font-size:14px;font-weight:700;padding:10px 22px;text-decoration:none;">
+        Open ResumeAlignAI &rarr;
+      </a>
+      <p style="color:#64748b;font-size:12px;margin:10px 0 0;">
+        <a href="${url}" target="_blank" rel="noopener" style="color:#0f766e;text-decoration:none;">${url.replace(/^https?:\/\//, "")}</a>
+      </p>
+    </div>`;
+};
+
 const logSent = (info, email) => {
   if (isEtherealMode()) {
     const previewUrl = nodemailer.getTestMessageUrl(info);
@@ -247,8 +265,8 @@ export const sendAdminResumeCopy = async ({ name, email, resumeTitle, resumeData
   <tr><td align="center">
     <table cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;max-width:620px;width:100%;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
       <tr><td style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);padding:30px 38px;text-align:center;">
-        <div style="background:#fff;border-radius:10px;color:#0f766e;display:inline-block;font-size:18px;font-weight:800;height:44px;line-height:44px;width:44px;margin-bottom:14px;">R</div>
-        <h1 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 6px;">ResumeAlignAI</h1>
+        <a href="${appUrl()}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;"><div style="background:#fff;border-radius:10px;color:#0f766e;display:inline-block;font-size:18px;font-weight:800;height:44px;line-height:44px;width:44px;margin-bottom:14px;">R</div></a>
+        <h1 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 6px;"><a href="${appUrl()}" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">ResumeAlignAI</a></h1>
         <p style="color:rgba(255,255,255,0.88);font-size:14px;margin:0;">Support copy of your updated resume</p>
       </td></tr>
       <tr><td style="padding:34px 38px;">
@@ -258,6 +276,7 @@ export const sendAdminResumeCopy = async ({ name, email, resumeTitle, resumeData
         </p>
         ${note ? `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;color:#334155;font-size:13px;line-height:1.6;margin:0 0 20px;padding:14px 16px;"><strong>Support note:</strong> ${note}</div>` : ""}
         ${buildResumeSection(resumeData)}
+        ${websiteCta()}
         <p style="color:#94a3b8;font-size:13px;margin:24px 0 0;line-height:1.6;">
           Questions? Email us at
           <a href="mailto:resumealignai@resumealignai.online" style="color:#0f766e;text-decoration:none;">resumealignai@resumealignai.online</a>.
@@ -297,8 +316,8 @@ const buildConfirmationHtml = ({ name, resumeTitle, amountRs, paymentId }) => `
   <tr><td align="center">
     <table cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;max-width:580px;width:100%;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
       <tr><td style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);padding:32px 40px;text-align:center;">
-        <div style="background:#fff;border-radius:10px;color:#0f766e;display:inline-block;font-size:18px;font-weight:800;height:44px;line-height:44px;width:44px;margin-bottom:14px;">R</div>
-        <h1 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 6px;">ResumeAlignAI Premium</h1>
+        <a href="${appUrl()}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;"><div style="background:#fff;border-radius:10px;color:#0f766e;display:inline-block;font-size:18px;font-weight:800;height:44px;line-height:44px;width:44px;margin-bottom:14px;">R</div></a>
+        <h1 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 6px;"><a href="${appUrl()}" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">ResumeAlignAI Premium</a></h1>
         <p style="color:rgba(255,255,255,0.88);font-size:14px;margin:0;">Payment confirmed — your resume is unlocked</p>
       </td></tr>
       <tr><td style="padding:36px 40px;">
@@ -333,6 +352,7 @@ const buildConfirmationHtml = ({ name, resumeTitle, amountRs, paymentId }) => `
           If your session timed out before downloading, reply to this email with your payment ID and our support team will resend the files.
         </p>
 
+        ${websiteCta()}
         <p style="color:#94a3b8;font-size:13px;margin:0;line-height:1.6;">
           Questions? Email
           <a href="mailto:resumealignai@resumealignai.online" style="color:#0f766e;text-decoration:none;">resumealignai@resumealignai.online</a>
@@ -382,8 +402,8 @@ const buildAttachmentsHtml = ({ name, resumeTitle, amountRs }) => `
   <tr><td align="center">
     <table cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;max-width:580px;width:100%;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
       <tr><td style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);padding:32px 40px;text-align:center;">
-        <div style="background:#fff;border-radius:10px;color:#0f766e;display:inline-block;font-size:18px;font-weight:800;height:44px;line-height:44px;width:44px;margin-bottom:14px;">R</div>
-        <h1 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 6px;">ResumeAlignAI</h1>
+        <a href="${appUrl()}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;"><div style="background:#fff;border-radius:10px;color:#0f766e;display:inline-block;font-size:18px;font-weight:800;height:44px;line-height:44px;width:44px;margin-bottom:14px;">R</div></a>
+        <h1 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 6px;"><a href="${appUrl()}" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">ResumeAlignAI</a></h1>
         <p style="color:rgba(255,255,255,0.85);font-size:14px;margin:0;">Payment confirmed — your resume files are attached!</p>
       </td></tr>
       <tr><td style="padding:36px 40px;">
@@ -432,6 +452,7 @@ const buildAttachmentsHtml = ({ name, resumeTitle, amountRs }) => `
           </ol>
         </div>
 
+        ${websiteCta()}
         <p style="color:#94a3b8;font-size:13px;margin:0;line-height:1.6;">
           Questions? Email us at
           <a href="mailto:resumealignai@resumealignai.online" style="color:#0f766e;text-decoration:none;">resumealignai@resumealignai.online</a>
