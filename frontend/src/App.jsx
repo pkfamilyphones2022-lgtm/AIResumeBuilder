@@ -32,6 +32,8 @@ import Form from "./components/Form.jsx";
 import AdminPanel from "./components/AdminPanel.jsx";
 import Samples from "./components/Samples.jsx";
 import PrivacyPolicy from "./components/PrivacyPolicy.jsx";
+import RefundPolicy from "./components/RefundPolicy.jsx";
+import TermsOfService from "./components/TermsOfService.jsx";
 import { sampleResumes } from "./components/sampleResumes.js";
 
 const fadeUp = {
@@ -382,6 +384,8 @@ export default function App() {
   const isSamplesPage = pathname === "/samples";
   const isAdminPage = pathname === "/admin";
   const isPrivacyPage = pathname === "/privacy";
+  const isRefundPage = pathname === "/refund-policy";
+  const isTermsPage = pathname === "/terms";
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -407,6 +411,14 @@ export default function App() {
 
   if (isPrivacyPage) {
     return <PrivacyPolicy onBack={() => navigateTo("/", setPathname)} />;
+  }
+
+  if (isRefundPage) {
+    return <RefundPolicy onBack={() => navigateTo("/", setPathname)} />;
+  }
+
+  if (isTermsPage) {
+    return <TermsOfService onBack={() => navigateTo("/", setPathname)} />;
   }
 
   if (isBuilderPage) {
@@ -1367,6 +1379,18 @@ export default function App() {
               onClick={(e) => { e.preventDefault(); navigateTo("/privacy", setPathname); }}
             >
               Privacy Policy
+            </a>
+            <a
+              href="/refund-policy"
+              onClick={(e) => { e.preventDefault(); navigateTo("/refund-policy", setPathname); }}
+            >
+              Refund Policy
+            </a>
+            <a
+              href="/terms"
+              onClick={(e) => { e.preventDefault(); navigateTo("/terms", setPathname); }}
+            >
+              Terms of Service
             </a>
           </nav>
           <p className="site-footer-meta">
