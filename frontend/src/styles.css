@@ -899,23 +899,20 @@ button svg {
     radial-gradient(circle at 88% 6%, rgba(245, 160, 86, 0.13), transparent 24%);
 }
 
+/* The brand mark is now a complete SVG (gradient + shine + R) rendered by
+   the BrandMark component, so .brand-mark only needs to size and crop the
+   container. The square's rounded corner is baked into the SVG (rx=14 on
+   a 64-wide viewBox = ~22% radius), so border-radius here just prevents
+   any sibling box-shadow / outline from spilling past the corner. */
 .brand-mark {
   align-items: center;
-  background: linear-gradient(135deg, var(--accent), var(--accent-warm));
-  border-radius: 8px;
-  color: #ffffff;
+  border-radius: 10px;
   display: inline-flex;
-  font-family: "Space Grotesk", "Arial Black", system-ui, sans-serif;
-  font-size: 1.6rem;
-  font-weight: 700;
+  flex-shrink: 0;
   height: 42px;
   justify-content: center;
-  letter-spacing: -0.01em;
-  line-height: 1;
+  overflow: hidden;
   width: 42px;
-  /* Prevent FOIT (Flash Of Invisible Text) — fall back instantly while
-     Space Grotesk loads, then swap in the web font when it's ready. */
-  font-display: swap;
 }
 
 
