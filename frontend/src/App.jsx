@@ -36,6 +36,7 @@ import Samples from "./components/Samples.jsx";
 import PrivacyPolicy from "./components/PrivacyPolicy.jsx";
 import RefundPolicy from "./components/RefundPolicy.jsx";
 import TermsOfService from "./components/TermsOfService.jsx";
+import BrandMark from "./components/BrandMark.jsx";
 import { sampleResumes } from "./components/sampleResumes.js";
 
 const fadeUp = {
@@ -468,7 +469,7 @@ export default function App() {
               onClick={() => navigateTo("/", setPathname)}
               title="Go to home"
             >
-              <span className="brand-mark">R</span>
+              <BrandMark />
               <div>
                 <p>ResumeAlignAI <span className="brand-premium-badge">Premium</span></p>
                 <span>{isFresherBuilder ? "Fresher workspace" : "Experienced workspace"}</span>
@@ -586,7 +587,7 @@ export default function App() {
             onClick={(e) => { e.preventDefault(); navigateTo("/", setPathname); window.scrollTo({ top: 0, behavior: "smooth" }); }}
             aria-label="ResumeAlignAI home"
           >
-            <span className="brand-mark">R</span>
+            <BrandMark />
             <div>
               <p>ResumeAlignAI <span className="brand-premium-badge">Premium</span></p>
               <span>Premium AI resumes, aligned to your target role</span>
@@ -1405,7 +1406,7 @@ export default function App() {
             onClick={(e) => { e.preventDefault(); navigateTo("/", setPathname); window.scrollTo({ top: 0, behavior: "smooth" }); }}
             aria-label="ResumeAlignAI home"
           >
-            <span className="brand-mark">R</span>
+            <BrandMark />
             <div>
               <p>ResumeAlignAI <span className="brand-premium-badge">Premium</span></p>
               <span>Premium AI resumes, aligned to your target role</span>

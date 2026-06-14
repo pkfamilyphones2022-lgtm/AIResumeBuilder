@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, BookOpen, Briefcase, ChevronLeft, Eye, FileText } from "lucide-react";
 import Preview from "./Preview.jsx";
+import BrandMark from "./BrandMark.jsx";
 import { normalizeResumeData } from "./resumeUtils.js";
 import { sampleResumes } from "./sampleResumes.js";
 
@@ -34,7 +35,7 @@ export default function Samples({ onBack, onNavigate }) {
             onClick={onBack}
             title="Go to home"
           >
-            <span className="brand-mark">R</span>
+            <BrandMark />
             <div>
               <p>ResumeAlignAI</p>
               <span>Sample Resume Library</span>

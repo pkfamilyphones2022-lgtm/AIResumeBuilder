@@ -1,5 +1,6 @@
 import React from "react";
 import { ChevronLeft, FileText, Mail, Moon, Sun } from "lucide-react";
+import BrandMark from "./BrandMark.jsx";
 
 const SUPPORT_EMAIL = "support@resumealignai.online";
 
@@ -9,7 +10,7 @@ export default function TermsOfService({ onBack, theme, onToggleTheme }) {
       <header className="privacy-hero">
         <nav className="builder-brandbar">
           <button className="brand-lockup builder-brand-lockup brand-home-link" onClick={onBack} title="Go to home">
-            <span className="brand-mark">R</span>
+            <BrandMark />
             <div>
               <p>ResumeAlignAI <span className="brand-premium-badge">Premium</span></p>
               <span>Terms of Service</span>
