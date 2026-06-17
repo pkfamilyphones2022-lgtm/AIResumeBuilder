@@ -77,7 +77,7 @@ export default function PrivacyPolicy({ onBack, theme, onToggleTheme }) {
           <h2>3. Why we collect it</h2>
           <ul>
             <li>To generate, refine, score, preview, and deliver your resume.</li>
-            <li>To process your Rs.69 premium unlock through Razorpay and email a payment confirmation.</li>
+            <li>To process your Rs.51 premium unlock through Razorpay and email a payment confirmation.</li>
             <li>To allow our support team to resend a paid resume if your browser session timed out before download.</li>
             <li>To produce aggregate business metrics for the admin dashboard (revenue, AI cost, downloads).</li>
             <li>To prevent abuse (rate limiting, signed challenge, honeypot field).</li>

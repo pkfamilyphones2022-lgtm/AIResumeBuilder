@@ -306,3 +306,123 @@ export const getAdminResumeForEmail = (resumeId) =>
     ORDER BY CASE WHEN p.status = 'success' THEN 0 ELSE 1 END, p.created_at DESC
     LIMIT 1
   `).get(resumeId);
+
+/* ─── Weekly Pass subscriptions ───────────────────────────── */
+
+// Create an active subscription. Any prior active subscription for this
+// email is flipped to 'replaced' first so only one session is live at a time.
+export const createSubscription = ({
+  email,
+  token,
+  planType = "weekly",
+  downloadsLimit = 15,
+  expiresAt,
+  razorpayPaymentId,
+  razorpayOrderId,
+  amountPaise
+}) => {
+  const db = getDb();
+  const tx = db.transaction(() => {
+    db.prepare(
+      `UPDATE subscriptions SET status='replaced' WHERE email=? AND status='active'`
+    ).run(email);
+
+    const result = db.prepare(`
+      INSERT INTO subscriptions
+        (email, token, plan_type, downloads_limit, downloads_used,
+         expires_at, status, razorpay_payment_id, razorpay_order_id, amount_paise)
+      VALUES (?, ?, ?, ?, 0, ?, 'active', ?, ?, ?)
+    `).run(
+      email, token, planType, downloadsLimit, expiresAt,
+      razorpayPaymentId, razorpayOrderId, amountPaise
+    );
+    return result.lastInsertRowid;
+  });
+  return tx();
+};
+
+// Lookup an active subscription for { email, token }. Returns null if none.
+export const getActiveSubscription = (email, token) => {
+  if (!email || !token) return null;
+  const row = getDb().prepare(`
+    SELECT
+      id,
+      email,
+      token,
+      plan_type           AS planType,
+      downloads_limit     AS downloadsLimit,
+      downloads_used      AS downloadsUsed,
+      emails_used         AS emailsUsed,
+      expires_at          AS expiresAt,
+      status,
+      razorpay_payment_id AS razorpayPaymentId,
+      created_at          AS createdAt
+    FROM subscriptions
+    WHERE email = ? AND token = ? AND status = 'active'
+    LIMIT 1
+  `).get(email, token);
+  return row || null;
+};
+
+// Atomically increment downloads_used or emails_used (per `kind`). Both
+// counters share the single `downloads_limit` cap — once their sum hits the
+// limit, the pass is marked exhausted. Returns the updated row or null if
+// (a) sub doesn't exist, (b) it expired, or (c) limit already reached.
+export const consumeSubscriptionUse = (email, token, nowMs, kind = "download") => {
+  const db = getDb();
+  const column = kind === "email" ? "emails_used" : "downloads_used";
+
+  const tx = db.transaction(() => {
+    const row = db.prepare(`
+      SELECT id, downloads_limit AS downloadsLimit,
+             downloads_used  AS downloadsUsed,
+             emails_used     AS emailsUsed,
+             expires_at       AS expiresAt
+      FROM subscriptions
+      WHERE email = ? AND token = ? AND status = 'active'
+      LIMIT 1
+    `).get(email, token);
+
+    if (!row) return { ok: false, reason: "not_found" };
+
+    const expiresMs = new Date(row.expiresAt).getTime();
+    if (Number.isFinite(expiresMs) && expiresMs <= nowMs) {
+      db.prepare(`UPDATE subscriptions SET status='expired' WHERE id=?`).run(row.id);
+      return { ok: false, reason: "expired" };
+    }
+
+    const totalUsed = row.downloadsUsed + row.emailsUsed;
+    if (totalUsed >= row.downloadsLimit) {
+      db.prepare(`UPDATE subscriptions SET status='exhausted' WHERE id=?`).run(row.id);
+      return { ok: false, reason: "exhausted" };
+    }
+
+    db.prepare(
+      `UPDATE subscriptions SET ${column} = ${column} + 1 WHERE id = ?`
+    ).run(row.id);
+
+    const newDownloads = row.downloadsUsed + (kind === "email" ? 0 : 1);
+    const newEmails    = row.emailsUsed    + (kind === "email" ? 1 : 0);
+    const newTotal     = newDownloads + newEmails;
+    const remaining    = row.downloadsLimit - newTotal;
+
+    if (remaining <= 0) {
+      db.prepare(`UPDATE subscriptions SET status='exhausted' WHERE id=?`).run(row.id);
+    }
+
+    return {
+      ok: true,
+      kind,
+      downloadsUsed: newDownloads,
+      emailsUsed:    newEmails,
+      downloadsLimit: row.downloadsLimit,
+      remaining,
+      expiresAt: row.expiresAt
+    };
+  });
+  return tx();
+};
+
+// Back-compat alias — old callers still import this name.
+export const consumeSubscriptionDownload = (email, token, nowMs) =>
+  consumeSubscriptionUse(email, token, nowMs, "download");

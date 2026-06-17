@@ -10,6 +10,7 @@ import ResumeGenerationLoader from "./ResumeGenerationLoader.jsx";
 import ATSScore from "./ATSScore.jsx";
 import { normalizeResumeData, resumeToPlainText } from "./resumeUtils.js";
 import { parseUploadError, parseGenerateError } from "../utils/apiError.js";
+import { getSubscription, refreshSubscriptionStatus } from "./Payment.jsx";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -102,6 +103,12 @@ export default function Form({ mode = "experienced" }) {
   const [challenge, setChallenge] = useState(null);
   const [challengeAnswer, setChallengeAnswer] = useState("");
   const [website, setWebsite] = useState("");
+  const [subscription, setSubscription] = useState(() => getSubscription());
+
+  // Refresh subscription status on mount so the badge reflects truth.
+  useEffect(() => {
+    refreshSubscriptionStatus().then(setSubscription).catch(() => {});
+  }, []);
 
   const set = (field, value) => setForm((c) => ({ ...c, [field]: value }));
 
@@ -344,6 +351,12 @@ export default function Form({ mode = "experienced" }) {
           <div>
             <p className="eyebrow">Resume Workshop</p>
             <h1>{isExperienced ? "Generate your experienced resume" : "Generate your fresher resume"}</h1>
+            {subscription && subscription.remaining > 0 && (
+              <span className="weekly-pass-pill" style={{ marginTop: 10 }}>
+                Weekly Pass
+                <span className="weekly-pass-pill-count">{subscription.remaining} of {subscription.downloadsLimit || 15} left</span>
+              </span>
+            )}
           </div>
           <FileText aria-hidden="true" />
         </div>

@@ -70,8 +70,8 @@ const benefits = [
   },
   {
     icon: CreditCard,
-    title: "Paid PDF unlock at Rs.69 (was Rs.299)",
-    text: "Users preview the resume first, then unlock a polished PDF export with verified checkout and cleaner positioning."
+    title: "Paid PDF unlock at Rs.51",
+    text: "Users preview the resume first, then unlock a polished PDF export with verified checkout. Flat price — no subscription, no upsell."
   },
   {
     icon: ScanSearch,
@@ -103,10 +103,10 @@ const customerWins = [
 ];
 
 const stats = [
-  { value: "12k+", label: "Resumes drafted" },
-  { value: "4.9/5", label: "User satisfaction" },
-  { value: "88%", label: "Average ATS lift after optimization" },
-  { value: "24 hrs", label: "Typical time users save per job cycle" }
+  { value: "Rs.51", label: "Flat one-time price · no subscription" },
+  { value: "27", label: "Recruiter-safe templates · switch anytime" },
+  { value: "Fresher + Exp", label: "Two purpose-built builder flows" },
+  { value: "DPDP-aligned", label: "India data-protection compliant" }
 ];
 
 const testimonials = [
@@ -209,10 +209,10 @@ const animatedPhrases = [
 ];
 
 const atsAwarenessStats = [
-  { value: "75%", label: "of resumes never reach a human recruiter — rejected by ATS first" },
-  { value: "6 sec", label: "average time a recruiter spends on a resume that passes ATS" },
-  { value: "98%", label: "of Fortune 500 companies use ATS to filter applicants" },
-  { value: "3×", label: "higher interview callback rate when resume keywords match the JD" }
+  { value: "Filter", label: "Most mid-to-large employers use an ATS to screen resumes before any human review" },
+  { value: "Match", label: "ATS scores your resume by literal keyword match against the job description" },
+  { value: "Format", label: "Tables, columns, icons, and fancy headings frequently break ATS parsing" },
+  { value: "Sections", label: "Non-standard headings like 'Where I've worked' get skipped — ATS expects 'Experience'" }
 ];
 
 const atsRejectionReasons = [
@@ -230,7 +230,7 @@ const faqs = [
   },
   {
     q: "How many resumes can I download?",
-    a: "Each payment of Rs.69 unlocks one PDF download for that resume session. You can generate and preview your resume as many times as you like for free — you only pay when you're satisfied and ready to download the final version."
+    a: "Each payment of Rs.51 unlocks one PDF download for that resume session. You can generate and preview your resume as many times as you like for free — you only pay when you're satisfied and ready to download the final version."
   },
   {
     q: "Can I edit the generated resume before downloading?",
@@ -242,7 +242,7 @@ const faqs = [
   },
   {
     q: "Can I generate resumes for multiple job roles?",
-    a: "Yes. Paste a new job description, adjust your details, and click Generate — each run creates a fresh, role-specific version. Each PDF download requires a separate Rs.69 payment, but regenerating is always free."
+    a: "Yes. Paste a new job description, adjust your details, and click Generate — each run creates a fresh, role-specific version. Each PDF download requires a separate Rs.51 payment, but regenerating is always free."
   },
   {
     q: "What payment methods are accepted?",
@@ -329,6 +329,236 @@ function ATSRingMini({ score = 92, delay = 0.3 }) {
   );
 }
 
+function JourneyPipelineVertical({ steps, intervalMs = 2400 }) {
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (paused) return;
+    const t = setInterval(() => {
+      setActive((i) => (i + 1) % steps.length);
+    }, intervalMs);
+    return () => clearInterval(t);
+  }, [paused, steps.length, intervalMs]);
+
+  const progressPct = ((active + 1) / steps.length) * 100;
+
+  return (
+    <div
+      className="journey-pipeline-v"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div className="journey-track-v">
+        <div className="journey-track-line-v">
+          <motion.div
+            className="journey-track-fill-v"
+            initial={false}
+            animate={{ height: `${progressPct}%` }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          />
+        </div>
+
+        {steps.map(({ icon: NodeIcon, step, tag, title, text, color }, i) => {
+          const isActive = i === active;
+          const isDone = i < active;
+          return (
+            <motion.div
+              key={step}
+              className={`journey-row-v${isActive ? " is-active" : ""}${isDone ? " is-done" : ""}`}
+              style={{ "--node-color": color }}
+              onClick={() => setActive(i)}
+              role="button"
+              tabIndex={0}
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.12 * i + 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <motion.span
+                className="journey-row-dot"
+                animate={
+                  isActive
+                    ? { scale: [1, 1.18, 1], boxShadow: [
+                        "0 0 0 5px color-mix(in srgb, var(--node-color) 18%, transparent), 0 8px 20px rgba(15,23,42,0.16)",
+                        "0 0 0 9px color-mix(in srgb, var(--node-color) 10%, transparent), 0 8px 20px rgba(15,23,42,0.16)",
+                        "0 0 0 5px color-mix(in srgb, var(--node-color) 18%, transparent), 0 8px 20px rgba(15,23,42,0.16)"
+                      ] }
+                    : { scale: 1 }
+                }
+                transition={isActive ? { duration: 1.8, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }}
+              >
+                {isDone ? <CheckCircle2 size={18} /> : <NodeIcon size={18} />}
+              </motion.span>
+
+              <motion.div
+                className="journey-row-content"
+                animate={{
+                  opacity: isActive ? 1 : isDone ? 0.7 : 0.45,
+                  x: isActive ? 0 : -4
+                }}
+                transition={{ duration: 0.4 }}
+              >
+                <span className="journey-row-step">{step} · {tag}</span>
+                <strong>{title}</strong>
+                <p className="journey-row-text">
+                  {text}
+                  {step === "03" && isActive && (
+                    <motion.span
+                      className="journey-row-extra"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.35, delay: 0.1 }}
+                    >
+                      <span className="journey-row-ats">95%</span> ATS match
+                    </motion.span>
+                  )}
+                  {step === "04" && isActive && (
+                    <motion.span
+                      className="journey-row-badge"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1, transition: { duration: 0.4, delay: 0.1 } }}
+                    >
+                      <motion.span
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+                        style={{ display: "inline-flex" }}
+                      >
+                        <CheckCircle2 size={14} />
+                      </motion.span>
+                      Recruiter Shortlisted!
+                    </motion.span>
+                  )}
+                </p>
+              </motion.div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function JourneyPipeline({ steps, onCta }) {
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (paused) return;
+    const t = setInterval(() => {
+      setActive((i) => (i + 1) % steps.length);
+    }, 2600);
+    return () => clearInterval(t);
+  }, [paused, steps.length]);
+
+  const current = steps[active];
+  const Icon = current.icon;
+  const progressPct = ((active + 1) / steps.length) * 100;
+
+  return (
+    <div
+      className="journey-pipeline"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div className="journey-track">
+        <div className="journey-track-line">
+          <motion.div
+            className="journey-track-fill"
+            initial={false}
+            animate={{ width: `${progressPct}%` }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          />
+        </div>
+        {steps.map(({ icon: NodeIcon, step, tag, color }, i) => {
+          const isActive = i === active;
+          const isDone = i < active;
+          return (
+            <button
+              key={step}
+              type="button"
+              className={`journey-node${isActive ? " is-active" : ""}${isDone ? " is-done" : ""}`}
+              onClick={() => setActive(i)}
+              aria-label={`Step ${step}: ${tag}`}
+              style={{ "--node-color": color }}
+            >
+              <motion.span
+                className="journey-node-dot"
+                animate={isActive ? { scale: [1, 1.18, 1] } : { scale: 1 }}
+                transition={isActive ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }}
+              >
+                {isDone ? <CheckCircle2 size={20} /> : <NodeIcon size={20} />}
+              </motion.span>
+              <span className="journey-node-step">{step}</span>
+              <span className="journey-node-tag">{tag}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="journey-stage">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={current.step}
+            className="journey-stage-card"
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -16, scale: 0.98 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            style={{ "--card-color": current.color }}
+          >
+            <div className="journey-stage-head">
+              <motion.span
+                className="journey-stage-icon"
+                style={{ background: `${current.color}1a`, color: current.color }}
+                initial={{ rotate: -8, scale: 0.85 }}
+                animate={{ rotate: 0, scale: 1 }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <Icon size={28} />
+              </motion.span>
+              <div>
+                <span className="journey-stage-tag" style={{ color: current.color }}>
+                  Step {current.step} · {current.tag}
+                </span>
+                <h3>{current.title}</h3>
+              </div>
+            </div>
+            <p>{current.text}</p>
+
+            {current.step === "03" && (
+              <div className="journey-stage-extra">
+                <ATSRingMini score={95} delay={0.1} />
+                <span>Live ATS scoring — keyword gaps flagged before you apply.</span>
+              </div>
+            )}
+            {current.step === "04" && (
+              <motion.div
+                className="journey-hired-badge"
+                animate={{ scale: [1, 1.06, 1] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <CheckCircle2 size={16} /> Recruiter Impressed!
+              </motion.div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      <motion.div
+        className="journey-cta-row"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+      >
+        <button className="hero-primary" onClick={onCta}>
+          Start My Resume <ArrowRight size={18} />
+        </button>
+      </motion.div>
+    </div>
+  );
+}
+
 function usePathname() {
   const [pathname, setPathname] = useState(window.location.pathname);
 
@@ -343,35 +573,22 @@ function usePathname() {
 
 const THEME_KEY = "raa_theme";
 
+// Dark mode is temporarily disabled. The CSS and component scaffolding
+// (theme-aware overrides throughout styles.css, props plumbing through
+// the legal pages) are preserved — only these two functions are switched
+// off so it's a one-edit revert when we re-enable it.
 function useTheme() {
-  const [theme, setTheme] = useState(() => {
-    try {
-      return localStorage.getItem(THEME_KEY) || "light";
-    } catch {
-      return "light";
-    }
-  });
-
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    try { localStorage.setItem(THEME_KEY, theme); } catch {}
-  }, [theme]);
-
-  const toggle = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
-  return [theme, toggle];
+    document.documentElement.setAttribute("data-theme", "light");
+    try { localStorage.removeItem(THEME_KEY); } catch {}
+  }, []);
+  // Returning a null toggle makes `{onToggleTheme && <button>...}` checks
+  // in the legal pages skip rendering the toggle.
+  return ["light", null];
 }
 
-function ThemeToggle({ theme, onToggle }) {
-  return (
-    <button
-      className="theme-toggle"
-      onClick={onToggle}
-      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-    >
-      {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-    </button>
-  );
+function ThemeToggle() {
+  return null;
 }
 
 function navigateTo(path, setPathname) {
@@ -491,10 +708,9 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45 }}
           >
-            <span>LIMITED OFFER</span>
-            <strong>Unlock your resume PDF for Rs.69</strong>
-            <em>Rs.299</em>
-            <small>77% off · AI resume + ATS score + 27 templates</small>
+            <span>JUST LAUNCHED</span>
+            <strong>Unlock your resume PDF for Rs.51</strong>
+            <small>Flat one-time price · AI resume + ATS score + 27 templates</small>
           </motion.div>
 
           <div className="builder-workspace-head">
@@ -558,19 +774,18 @@ export default function App() {
             className="promo-fire"
             animate={{ scale: [1, 1.18, 1], rotate: [-4, 4, -4] }}
             transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-          >🔥</motion.span>
-          <span className="promo-tag">LIMITED OFFER</span>
-          <span className="promo-old">Rs.299</span>
-          <strong className="promo-offer">Rs.<span className="promo-new">69</span></strong>
+          >🚀</motion.span>
+          <span className="promo-tag">JUST LAUNCHED</span>
+          <strong className="promo-offer">Rs.<span className="promo-new">51</span></strong>
           <span className="promo-divider">·</span>
-          <span className="promo-text">Get 77% Off Now</span>
+          <span className="promo-text">Single resume · or Weekly Pass at Rs.199</span>
           <motion.button
             className="promo-cta"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => navigateTo("/builder", setPathname)}
           >
-            Claim Offer <Zap size={14} />
+            Try the Builder <Zap size={14} />
           </motion.button>
         </div>
       </motion.div>
@@ -679,121 +894,15 @@ export default function App() {
 
           <motion.div
             className="hero-visual"
-            initial={{ opacity: 0, scale: 0.9, rotateX: 8, rotateY: -12 }}
-            animate={{ opacity: 1, scale: 1, rotateX: 0, rotateY: 0 }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, scale: 0.94, y: 24 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="hero-scene">
-              {/* Single orbit ring — kept for ambient motion */}
-              <motion.div
-                className="scene-orbit orbit-one"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
-              />
-
-              {/* Floating keyword chips */}
-              {heroKeywords.map(({ label, top, left, delay }) => (
-                <motion.span
-                  key={label}
-                  className="hero-kw-chip"
-                  style={{ top, left }}
-                  initial={{ opacity: 0, scale: 0.6 }}
-                  animate={{
-                    opacity: [0, 1, 1, 0.8, 1],
-                    scale: [0.6, 1, 1, 0.96, 1],
-                    y: [0, -6, 0, 6, 0]
-                  }}
-                  transition={{
-                    delay,
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                >
-                  {label}
-                </motion.span>
-              ))}
-
-              {/* Main resume card */}
-              <motion.div
-                className="scene-card scene-card-main"
-                animate={{ y: [0, -12, 0], rotateY: [0, 6, 0], rotateX: [0, -3, 0] }}
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <div className="scene-card-top">
-                  <span>ResumeAlignAI Engine</span>
-                  <motion.span
-                    animate={{ rotate: [0, 20, -10, 0], scale: [1, 1.2, 1] }}
-                    transition={{ duration: 3, repeat: Infinity, delay: 2 }}
-                  >
-                    <Star size={16} />
-                  </motion.span>
-                </div>
-                <h2>Role-tailored resume output</h2>
-                <div className="scene-lines">
-                  {[100, 88, 72, 55].map((w, i) => (
-                    <motion.span
-                      key={i}
-                      initial={{ scaleX: 0, originX: 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{ delay: 0.4 + i * 0.15, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                      style={{ width: `${w}%` }}
-                    />
-                  ))}
-                </div>
-                {/* Typing cursor blink */}
-                <motion.span
-                  className="scene-cursor"
-                  animate={{ opacity: [1, 0, 1] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                />
-              </motion.div>
-
-              {/* ATS ring card — glows when ring completes */}
-              <motion.div
-                className="scene-card scene-card-side"
-                animate={{ y: [0, 10, 0], rotateZ: [-8, -4, -8] }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                whileHover={{ scale: 1.06, boxShadow: "0 0 32px rgba(15,118,110,0.4)" }}
-              >
-                <p style={{ textAlign: "center", marginBottom: 0, fontWeight: 700 }}>ATS Match</p>
-                <ATSRingMini score={95} />
-                <motion.small
-                  style={{ display: "block", textAlign: "center" }}
-                  animate={{ color: ["#5b6b80", "#0f766e", "#5b6b80"] }}
-                  transition={{ duration: 3, repeat: Infinity, delay: 2 }}
-                >
-                  keyword alignment
-                </motion.small>
-              </motion.div>
-
-              {/* PDF / Pricing card */}
-              <motion.div
-                className="scene-card scene-card-bottom"
-                animate={{ y: [0, -8, 0], rotateZ: [6, 10, 6] }}
-                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <p>PDF Unlock</p>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 8, margin: "6px 0" }}>
-                  <strong style={{ fontSize: "1.6rem" }}>Rs.69</strong>
-                  <span style={{ textDecoration: "line-through", color: "#888", fontSize: "0.95rem" }}>Rs.299</span>
-                </div>
-                <small>77% off · verified checkout</small>
-              </motion.div>
-
-              {/* "Shortlisted!" toast — floats in after 1.8s */}
-              <motion.div
-                className="scene-toast"
-                initial={{ opacity: 0, x: 50, scale: 0.8 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                transition={{ delay: 1.8, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <motion.span
-                  animate={{ scale: [1, 1.15, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: 3 }}
-                >✅</motion.span>
-                Recruiter Shortlisted!
-              </motion.div>
+            <div className="hero-pipeline-wrap">
+              <div className="hero-pipeline-eyebrow">
+                <Sparkles size={14} /> How it works
+              </div>
+              <JourneyPipelineVertical steps={journeySteps} />
             </div>
           </motion.div>
         </div>
@@ -830,11 +939,12 @@ export default function App() {
               <AlertTriangle size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />
               The hidden filter most job seekers miss
             </p>
-            <h2>75% of resumes are rejected before a human ever reads them.</h2>
+            <h2>Your resume has to clear an ATS filter before a human sees it.</h2>
             <p className="ats-aware-lead">
-              Applicant Tracking Systems (ATS) scan every resume for exact keywords, standard section
-              headings, and clean formatting. If your resume doesn't match what the algorithm expects —
-              it never reaches the recruiter's desk, no matter how qualified you are.
+              Most mid-to-large employers route applications through an Applicant Tracking System (ATS).
+              The ATS scores each resume by literal keyword match against the job description, expects
+              standard section headings, and stumbles on tables, columns, or fancy fonts. Miss those
+              expectations and the resume usually does not reach the recruiter's desk.
             </p>
             <p className="ats-aware-sub">Common reasons ATS systems reject resumes:</p>
             <ul className="ats-rejection-list">
@@ -920,65 +1030,6 @@ export default function App() {
             </div>
           </motion.div>
         </div>
-      </section>
-
-      {/* ── RECRUITER JOURNEY ── */}
-      <section className="content-band journey-section" id="how-it-works">
-        <div className="section-heading" style={{ textAlign: "center" }}>
-          <p>How it works</p>
-          <h2 style={{ maxWidth: "none" }}>From blank form to recruiter-ready in 4 steps.</h2>
-        </div>
-
-        <div className="journey-grid">
-          {journeySteps.map(({ icon: Icon, step, title, text, color, tag }, i) => (
-            <motion.div
-              key={step}
-              className="journey-step"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.2 }}
-              custom={i}
-              variants={fadeUp}
-              whileHover={{ y: -8, boxShadow: "0 28px 60px rgba(0,0,0,0.14)" }}
-            >
-              <div className="journey-step-top">
-                <span className="journey-num" style={{ background: color }}>{step}</span>
-                <span className="journey-tag" style={{ color }}>{tag}</span>
-              </div>
-              <div className="journey-icon-wrap" style={{ background: `${color}18` }}>
-                <Icon size={28} color={color} />
-              </div>
-              <h3>{title}</h3>
-              <p>{text}</p>
-              {step === "03" && (
-                <div className="journey-ats-demo">
-                  <ATSRingMini score={95} />
-                </div>
-              )}
-              {step === "04" && (
-                <motion.div
-                  className="journey-hired-badge"
-                  animate={{ scale: [1, 1.06, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <CheckCircle2 size={16} /> Recruiter Impressed!
-                </motion.div>
-              )}
-            </motion.div>
-          ))}
-        </div>
-
-        <motion.div
-          className="journey-cta-row"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.4, duration: 0.6 }}
-        >
-          <button className="hero-primary" onClick={() => navigateTo("/builder", setPathname)}>
-            Start My Resume <ArrowRight size={18} />
-          </button>
-        </motion.div>
       </section>
 
       {/* ── SAMPLE RESUMES ── */}
@@ -1140,7 +1191,7 @@ export default function App() {
               <article>
                 <span>03</span>
                 <h3>Affordable resume delivery</h3>
-                <p>Rs.69 (down from Rs.299) feels like an easy decision during active job search while still delivering a premium export.</p>
+                <p>Rs.51 flat — a low-friction decision during an active job search, while still delivering a premium export.</p>
               </article>
             </div>
           </motion.div>
@@ -1264,55 +1315,80 @@ export default function App() {
         </div>
       </section>
 
-      {/* ── PRICING OFFER ── */}
+      {/* ── PRICING (two tiers) ── */}
       <section className="content-band pricing-section" id="pricing">
-        <motion.div
-          className="pricing-card"
-          initial={{ opacity: 0, y: 36, scale: 0.96 }}
-          whileInView={{ opacity: 1, y: 0, scale: 1 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-        >
+        <div className="pricing-grid">
+          {/* Tier 1 — Single Resume */}
           <motion.div
-            className="pricing-badge"
-            animate={{ scale: [1, 1.04, 1] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+            className="pricing-card pricing-card--single"
+            initial={{ opacity: 0, y: 36, scale: 0.96 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           >
-            🔥 LIMITED TIME OFFER
+            <div className="pricing-badge pricing-badge--neutral">SINGLE RESUME</div>
+            <div className="pricing-headline">
+              <div className="pricing-new-price">Rs.<span>51</span></div>
+              <div className="pricing-discount-pill">FLAT PRICE</div>
+            </div>
+            <p className="pricing-sub">One AI-generated, ATS-aligned resume. Preview free, pay only when you download.</p>
+            <ul className="pricing-features">
+              {pricingFeatures.map((f) => (
+                <li key={f}>
+                  <CheckCircle2 size={16} className="pricing-check" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <motion.button
+              className="pricing-cta hero-primary"
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigateTo("/builder", setPathname)}
+            >
+              Pay Rs.51 — One Resume <ArrowRight size={18} />
+            </motion.button>
+            <p className="pricing-fine">One-time payment · No subscription · No upsell</p>
           </motion.div>
 
-          <div className="pricing-headline">
-            <span className="pricing-old-price">Rs.299</span>
-            <div className="pricing-new-price">
-              Rs.<span>69</span>
-            </div>
-            <div className="pricing-discount-pill">77% OFF</div>
-          </div>
-
-          <p className="pricing-sub">Everything you need to get shortlisted — one payment, no subscription.</p>
-
-          <ul className="pricing-features">
-            {pricingFeatures.map((f) => (
-              <li key={f}>
-                <CheckCircle2 size={16} className="pricing-check" />
-                {f}
-              </li>
-            ))}
-          </ul>
-
-          <motion.button
-            className="pricing-cta hero-primary"
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigateTo("/builder", setPathname)}
+          {/* Tier 2 — Weekly Pass */}
+          <motion.div
+            className="pricing-card pricing-card--weekly"
+            initial={{ opacity: 0, y: 36, scale: 0.96 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
           >
-            Unlock Premium Resume - 77% Off Today <ArrowRight size={18} />
-          </motion.button>
-
-          <p className="pricing-fine">
-            Preview your resume free · Pay only when you're happy with the result
-          </p>
-        </motion.div>
+            <motion.div
+              className="pricing-badge"
+              animate={{ scale: [1, 1.04, 1] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              ⚡ SPECIAL OFFER
+            </motion.div>
+            <div className="pricing-headline">
+              <div className="pricing-new-price">Rs.<span>199</span></div>
+              <div className="pricing-discount-pill">WEEKLY PASS</div>
+            </div>
+            <p className="pricing-sub">15 downloads in 7 days. Perfect for an active job-search week — multiple roles, multiple versions.</p>
+            <ul className="pricing-features">
+              <li><CheckCircle2 size={16} className="pricing-check" /><strong>15 downloads</strong> over 7 days</li>
+              <li><CheckCircle2 size={16} className="pricing-check" />Each download tracked — only counts when you save a PDF/DOCX</li>
+              <li><CheckCircle2 size={16} className="pricing-check" />Switch templates and re-generate freely</li>
+              <li><CheckCircle2 size={16} className="pricing-check" />Tied to your email — works across this device</li>
+              <li><CheckCircle2 size={16} className="pricing-check" />Effective price: <strong>~Rs.13 / resume</strong></li>
+            </ul>
+            <motion.button
+              className="pricing-cta hero-primary"
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigateTo("/builder", setPathname)}
+            >
+              Get Weekly Pass — Rs.199 <ArrowRight size={18} />
+            </motion.button>
+            <p className="pricing-fine">7 days OR 15 downloads, whichever comes first</p>
+          </motion.div>
+        </div>
       </section>
 
       {/* ── FAQ ── */}

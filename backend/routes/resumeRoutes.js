@@ -14,7 +14,9 @@ import {
   verifyPayment,
   checkPaymentToken,
   recordResumeDownload,
-  emailResumeAttachments
+  emailResumeAttachments,
+  getSubscriptionStatus,
+  useSubscriptionDownload
 } from "../controllers/paymentController.js";
 import { adminDeleteUserData, adminOverview, adminSendResume, adminTriggerBackup, requireAdmin } from "../controllers/adminController.js";
 
@@ -44,6 +46,8 @@ router.post("/payment/verify", verifyPayment);
 router.post("/payment/check", checkPaymentToken);
 router.post("/payment/download", recordResumeDownload);
 router.post("/payment/email-attachments", emailResumeAttachments);
+router.post("/payment/subscription/status", getSubscriptionStatus);
+router.post("/payment/subscription/use", useSubscriptionDownload);
 router.get("/admin/overview", requireAdmin, adminOverview);
 router.post("/admin/resumes/:resumeId/send", requireAdmin, adminSendResume);
 router.post("/admin/users/delete-by-email", requireAdmin, adminDeleteUserData);

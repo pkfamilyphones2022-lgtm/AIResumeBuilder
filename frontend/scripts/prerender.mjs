@@ -38,7 +38,7 @@ const routes = [
   {
     path: "/builder",
     title: "Build an Experienced Resume with AI — ResumeAlignAI",
-    description: "Build an experienced professional resume in minutes. Add your career history, paste the target job description, and ResumeAlignAI generates a polished, ATS-aligned PDF for Rs.69.",
+    description: "Build an experienced professional resume in minutes. Add your career history, paste the target job description, and ResumeAlignAI generates a polished, ATS-aligned PDF for Rs.51.",
     content: `
       <header>
         <nav aria-label="Primary">
@@ -64,7 +64,7 @@ const routes = [
             <li><strong>ATS scoring</strong> &mdash; see your match score before submitting</li>
             <li><strong>27 professional templates</strong> &mdash; switch and re-download free</li>
           </ul>
-          <p>Rs.69 unlocks PDF + DOCX download. Preview free, pay only when satisfied.</p>
+          <p>Rs.51 unlocks PDF + DOCX download. Preview free, pay only when satisfied.</p>
           <p><a href="/builder">Start building</a> &middot; <a href="/fresher-builder">Just out of college? Use the Fresher Builder</a> &middot; <a href="/samples">See sample resumes</a></p>
         </section>
       </main>
@@ -74,7 +74,7 @@ const routes = [
   {
     path: "/fresher-builder",
     title: "Build a Fresher Resume with AI — ResumeAlignAI",
-    description: "Build a fresher / entry-level resume around projects, internships, education, and achievements. ResumeAlignAI generates an ATS-aligned PDF in minutes for Rs.69.",
+    description: "Build a fresher / entry-level resume around projects, internships, education, and achievements. ResumeAlignAI generates an ATS-aligned PDF in minutes for Rs.51.",
     content: `
       <header>
         <nav aria-label="Primary">
@@ -100,7 +100,7 @@ const routes = [
             <li><strong>Achievements</strong> &mdash; hackathons, competitions, awards</li>
             <li><strong>ATS scoring</strong> &mdash; match score against the job description</li>
           </ul>
-          <p>Rs.69 unlocks PDF + DOCX download. Preview free, pay only when satisfied.</p>
+          <p>Rs.51 unlocks PDF + DOCX download. Preview free, pay only when satisfied.</p>
           <p><a href="/fresher-builder">Start as a fresher</a> &middot; <a href="/builder">Have work experience? Use the Experienced Builder</a> &middot; <a href="/samples">See fresher sample resumes</a></p>
         </section>
       </main>
@@ -140,7 +140,7 @@ const routes = [
             <li>Sales Executive</li>
             <li>And more &mdash; plus 27 templates to pick from</li>
           </ul>
-          <p><a href="/samples">View all sample resumes</a> &middot; <a href="/builder">Build your own resume for Rs.69</a></p>
+          <p><a href="/samples">View all sample resumes</a> &middot; <a href="/builder">Build your own resume for Rs.51</a></p>
         </section>
       </main>
       <footer><a href="/privacy">Privacy</a> &middot; <a href="/refund-policy">Refunds</a> &middot; <a href="/terms">Terms</a> &middot; <a href="mailto:support@resumealignai.online">support@resumealignai.online</a></footer>
@@ -235,7 +235,7 @@ const routes = [
           <h2>Key points</h2>
           <ul>
             <li>You must be 18 or older to use the service.</li>
-            <li>Rs.69 per resume download. Pricing may change for new customers; the price at checkout is final.</li>
+            <li>Rs.51 per resume download. Pricing may change for new customers; the price at checkout is final.</li>
             <li>You own the career details you submit and the AI-generated resume content for personal use.</li>
             <li>You are responsible for reviewing every section before sending it to a recruiter.</li>
             <li>Governed by Indian law; disputes subject to Maharashtra jurisdiction.</li>

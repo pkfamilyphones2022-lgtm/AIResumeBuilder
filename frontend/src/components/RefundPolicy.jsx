@@ -51,7 +51,7 @@ export default function RefundPolicy({ onBack, theme, onToggleTheme }) {
         <section>
           <h2>1. What you are paying for</h2>
           <p>
-            The Rs.69 unlock fee gives you a one-time download of your AI-generated resume in both PDF and DOCX formats,
+            The Rs.51 unlock fee gives you a one-time download of your AI-generated resume in both PDF and DOCX formats,
             optional email delivery of the same files, and the right to use the generated content for your own job applications.
             Payment is processed by Razorpay; we never store your card details.
           </p>

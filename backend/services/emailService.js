@@ -416,7 +416,7 @@ export const sendPaymentConfirmation = async ({ name, email, resumeTitle, amount
   if (!email) return { sent: false, reason: "no_email" };
   try {
     const transporter = await getTransporter();
-    const amountRs = Math.round((amount || 6900) / 100);
+    const amountRs = Math.round((amount || 5100) / 100);
 
     const info = await transporter.sendMail({
       from: fromAddress(),
@@ -507,7 +507,7 @@ const buildAttachmentsHtml = ({ name, resumeTitle, amountRs }) => `
 export const sendResumeWithAttachments = async ({ name, email, resumeTitle, pdfBase64, docxBase64, amount }) => {
   if (!email) return { sent: false, reason: "no_email" };
   const transporter = await getTransporter();
-  const amountRs = Math.round((amount || 6900) / 100);
+  const amountRs = Math.round((amount || 5100) / 100);
 
   const safeName = (resumeTitle || "resume").replace(/[^a-z0-9]/gi, "_");
   const attachments = [];

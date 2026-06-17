@@ -61,7 +61,7 @@ export default function TermsOfService({ onBack, theme, onToggleTheme }) {
           <p>
             ResumeAlignAI generates an ATS-aligned resume from your inputs (career details, optional uploaded resume,
             optional job description). It scores the result against a target job description, lets you preview and edit
-            the content, and unlocks a one-time download of the PDF and DOCX after a Rs.69 payment.
+            the content, and unlocks a one-time download of the PDF and DOCX after a Rs.51 payment.
           </p>
         </section>
 
@@ -89,7 +89,7 @@ export default function TermsOfService({ onBack, theme, onToggleTheme }) {
         <section>
           <h2>5. Payment, pricing, and refunds</h2>
           <p>
-            The current price is <strong>Rs.69</strong> per resume download, processed through Razorpay. Pricing may change
+            The current price is <strong>Rs.51</strong> per resume download, processed through Razorpay. Pricing may change
             in future for new customers but the price displayed at checkout is what you will be charged. Refund rules are
             described in our separate <a href="/refund-policy">Refund Policy</a>.
           </p>

@@ -51,6 +51,47 @@ body {
   margin: 0;
   min-width: 320px;
   overflow-x: hidden;
+  cursor: default;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+}
+
+/* Inputs/textareas/contenteditable still need the I-beam and selection. */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
+input:not([type]),
+textarea,
+[contenteditable="true"] {
+  cursor: text;
+  -webkit-user-select: text;
+     -moz-user-select: text;
+      -ms-user-select: text;
+          user-select: text;
+}
+
+/* Interactive elements get the pointer cursor explicitly so children
+   (text spans, icons) inherit it even where browsers would otherwise
+   show the I-beam over the actual glyphs. */
+button,
+a,
+[role="button"],
+.journey-row-v,
+.journey-row-v *,
+.journey-node,
+.journey-node * {
+  cursor: pointer;
+}
+
+button:disabled,
+[disabled] {
+  cursor: not-allowed;
 }
 
 @media print {
@@ -170,11 +211,12 @@ button svg {
 }
 
 .brand-lockup p,
-.brand-lockup span {
+.brand-lockup > div > span {
   margin: 0;
 }
 
 .brand-lockup p {
+  color: var(--text);
   font-family: "Space Grotesk", sans-serif;
   font-weight: 700;
   white-space: nowrap;
@@ -182,7 +224,11 @@ button svg {
   text-overflow: ellipsis;
 }
 
-.brand-lockup span {
+/* Tagline — scoped to `.brand-lockup > div > span` so this rule does NOT
+   match the brand-mark span (which is a direct child of .brand-lockup),
+   otherwise display:block + no explicit width would let the brand-mark SVG
+   render at its native 64x64 viewBox size, breaking the 42px square. */
+.brand-lockup > div > span {
   color: var(--muted);
   display: block;
   font-size: 0.8rem;
@@ -190,6 +236,16 @@ button svg {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Dark mode: explicit colors so the brand text never inherits "dark on dark".
+   The builder page keeps its white workspace head, so the brand text up top
+   needs to read against the dark page bg, not the white card below. */
+[data-theme="dark"] .brand-lockup p {
+  color: var(--text);
+}
+[data-theme="dark"] .brand-lockup > div > span {
+  color: var(--muted);
 }
 
 /* Hide the long tagline whenever the topbar gets crowded with nav links + CTAs */
@@ -900,19 +956,29 @@ button svg {
 }
 
 /* The brand mark is now a complete SVG (gradient + shine + R) rendered by
-   the BrandMark component, so .brand-mark only needs to size and crop the
-   container. The square's rounded corner is baked into the SVG (rx=14 on
-   a 64-wide viewBox = ~22% radius), so border-radius here just prevents
-   any sibling box-shadow / outline from spilling past the corner. */
+   the BrandMark component, so .brand-mark only needs to size the
+   container. The rounded corner is baked into the SVG itself (rx=14 on a
+   64-wide viewBox = ~22%), which keeps the corner radius proportional to
+   the box size and identical between landing (42px) and builder (46px). */
 .brand-mark {
   align-items: center;
-  border-radius: 10px;
-  display: inline-flex;
+  display: inline-flex !important;
   flex-shrink: 0;
-  height: 42px;
+  height: 42px !important;
   justify-content: center;
-  overflow: hidden;
-  width: 42px;
+  max-height: 42px !important;
+  max-width: 42px !important;
+  min-height: 42px !important;
+  min-width: 42px !important;
+  width: 42px !important;
+}
+
+/* Lock the inner SVG too so even if the parent rule loses, the SVG can't
+   expand past 42px. */
+.brand-mark > svg {
+  display: block !important;
+  height: 42px !important;
+  width: 42px !important;
 }
 
 
@@ -1632,11 +1698,407 @@ button svg {
   padding: 0 28px;
 }
 
+/* ── Hero Vertical Pipeline (replaces floating scene cards) ── */
+/* Override the floating-scene's reserved min-height so the pipeline card
+   sits properly aligned with the headline column instead of floating in
+   a huge centered box. */
+.hero-visual:has(.hero-pipeline-wrap) {
+  min-height: 0;
+  align-items: stretch;
+  perspective: none;
+  padding: 12px 0;
+}
+.hero-pipeline-wrap {
+  position: relative;
+  background: linear-gradient(180deg, #ffffff 0%, #fefdf9 100%);
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 24px;
+  padding: 26px 28px 22px;
+  box-shadow:
+    0 30px 70px rgba(15, 23, 42, 0.10),
+    0 0 0 1px rgba(15, 118, 110, 0.04);
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  align-self: center;
+}
+.hero-pipeline-wrap::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(15,118,110,0.25), transparent 40%, rgba(67,56,202,0.18));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+.hero-pipeline-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #0f766e;
+  background: rgba(15, 118, 110, 0.10);
+  padding: 6px 12px;
+  border-radius: 999px;
+  margin-bottom: 18px;
+}
+.journey-pipeline-v { position: relative; }
+.journey-track-v {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-left: 4px;
+}
+.journey-track-line-v {
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: 23px;
+  width: 3px;
+  background: rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.journey-track-fill-v {
+  width: 100%;
+  background: linear-gradient(180deg, #0f766e, #4338ca, #b45309, #166534);
+  border-radius: 999px;
+}
+.journey-row-v {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  cursor: pointer;
+  z-index: 1;
+}
+.journey-row-dot {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid rgba(15, 23, 42, 0.12);
+  color: rgba(15, 23, 42, 0.4);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  transition: all 0.35s ease;
+}
+.journey-row-v.is-active .journey-row-dot {
+  background: var(--node-color);
+  border-color: var(--node-color);
+  color: #fff;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--node-color) 18%, transparent),
+              0 8px 20px rgba(15, 23, 42, 0.16);
+}
+.journey-row-v.is-done .journey-row-dot {
+  background: color-mix(in srgb, var(--node-color) 14%, #ffffff);
+  border-color: var(--node-color);
+  color: var(--node-color);
+}
+.journey-row-content {
+  flex: 1;
+  min-width: 0;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.journey-row-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.journey-row-step {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.5);
+  margin-bottom: 2px;
+}
+.journey-row-v.is-active .journey-row-step,
+.journey-row-v.is-done .journey-row-step {
+  color: var(--node-color);
+}
+.journey-row-content strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.3;
+}
+.journey-row-content p {
+  margin: 4px 0 0;
+  font-size: 0.86rem;
+  color: rgba(15, 23, 42, 0.7);
+  line-height: 1.45;
+}
+.journey-row-v:not(.is-active) .journey-row-content p {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  opacity: 0.7;
+}
+.journey-row-extra {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  font-weight: 700;
+  color: #0f766e;
+}
+.journey-row-ats {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f766e;
+  color: #fff;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.journey-row-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 5px 12px;
+  background: linear-gradient(135deg, #166534, #15803d);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 999px;
+  box-shadow: 0 6px 16px rgba(22, 101, 52, 0.3);
+}
+
+[data-theme="dark"] .hero-pipeline-wrap {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .journey-row-dot {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.5);
+}
+[data-theme="dark"] .journey-row-content strong { color: #f8fafc; }
+[data-theme="dark"] .journey-row-content p { color: rgba(255, 255, 255, 0.7); }
+[data-theme="dark"] .journey-row-step { color: rgba(255, 255, 255, 0.5); }
+[data-theme="dark"] .journey-track-line-v { background: rgba(255, 255, 255, 0.1); }
+
+@media (max-width: 720px) {
+  .hero-pipeline-wrap { padding: 22px 20px 20px; border-radius: 20px; }
+  .journey-row-dot { width: 36px; height: 36px; }
+  .journey-track-line-v { left: 24px; }
+  .journey-row-content strong { font-size: 0.95rem; }
+  .journey-row-content p { font-size: 0.84rem; }
+}
+
+/* ── Animated Journey Pipeline ── */
+.journey-pipeline {
+  max-width: 980px;
+  margin: 32px auto 0;
+  padding: 0 16px;
+}
+.journey-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 14px 8px 20px;
+}
+.journey-track-line {
+  position: absolute;
+  top: 38px;
+  left: 12%;
+  right: 12%;
+  height: 4px;
+  background: rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  z-index: 0;
+}
+.journey-track-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0f766e, #4338ca, #b45309, #166534);
+  border-radius: 999px;
+}
+.journey-node {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.25s ease;
+}
+.journey-node:hover { transform: translateY(-2px); }
+.journey-node-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid rgba(15, 23, 42, 0.12);
+  color: rgba(15, 23, 42, 0.4);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  transition: all 0.35s ease;
+}
+.journey-node.is-active .journey-node-dot {
+  background: var(--node-color);
+  border-color: var(--node-color);
+  color: #fff;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--node-color) 18%, transparent),
+              0 10px 24px rgba(15, 23, 42, 0.18);
+}
+.journey-node.is-done .journey-node-dot {
+  background: color-mix(in srgb, var(--node-color) 14%, #ffffff);
+  border-color: var(--node-color);
+  color: var(--node-color);
+}
+.journey-node-step {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: rgba(15, 23, 42, 0.45);
+}
+.journey-node.is-active .journey-node-step,
+.journey-node.is-done .journey-node-step {
+  color: var(--node-color);
+}
+.journey-node-tag {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.55);
+  text-align: center;
+  line-height: 1.2;
+}
+.journey-node.is-active .journey-node-tag {
+  color: #0f172a;
+}
+
+.journey-stage {
+  position: relative;
+  min-height: 220px;
+  margin-top: 18px;
+}
+.journey-stage-card {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  padding: 28px 32px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.10);
+  border-top: 4px solid var(--card-color);
+}
+.journey-stage-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+.journey-stage-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  flex-shrink: 0;
+}
+.journey-stage-tag {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.journey-stage-card h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+.journey-stage-card p {
+  margin: 0;
+  color: rgba(15, 23, 42, 0.7);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.journey-stage-extra {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: rgba(15, 118, 110, 0.06);
+  border-radius: 14px;
+  color: #0f766e;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.journey-stage-extra svg { margin: 0 !important; }
+
+[data-theme="dark"] .journey-track-line { background: rgba(255, 255, 255, 0.1); }
+[data-theme="dark"] .journey-node-dot {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.5);
+}
+[data-theme="dark"] .journey-node-step,
+[data-theme="dark"] .journey-node-tag { color: rgba(255, 255, 255, 0.6); }
+[data-theme="dark"] .journey-node.is-active .journey-node-tag { color: #f8fafc; }
+[data-theme="dark"] .journey-stage-card {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .journey-stage-card h3 { color: #f8fafc; }
+[data-theme="dark"] .journey-stage-card p { color: rgba(255, 255, 255, 0.75); }
+
+@media (max-width: 720px) {
+  .journey-track { gap: 6px; padding: 10px 4px 16px; }
+  .journey-track-line { left: 14%; right: 14%; top: 32px; }
+  .journey-node-dot { width: 44px; height: 44px; }
+  .journey-node-tag { font-size: 0.7rem; }
+  .journey-stage-card { padding: 22px 20px; border-radius: 18px; }
+  .journey-stage-head { gap: 14px; }
+  .journey-stage-icon { width: 48px; height: 48px; }
+  .journey-stage-card h3 { font-size: 1.15rem; }
+  .journey-stage-card p { font-size: 0.95rem; }
+}
+
 /* ── Pricing Offer ── */
 .pricing-section {
   display: flex;
   justify-content: center;
   padding: 48px 0;
+}
+.pricing-grid {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 1100px;
+  width: 100%;
+}
+@media (max-width: 880px) {
+  .pricing-grid { grid-template-columns: 1fr; }
 }
 .pricing-card {
   background: linear-gradient(160deg, rgba(255,255,255,0.96) 0%, rgba(240,253,250,0.92) 100%);
@@ -1647,6 +2109,14 @@ button svg {
   padding: 40px 36px 32px;
   text-align: center;
   width: 100%;
+}
+.pricing-card--weekly {
+  background: linear-gradient(160deg, rgba(255,247,237,0.98) 0%, rgba(254,235,200,0.94) 100%);
+  border-color: rgba(180, 83, 9, 0.32);
+  box-shadow: 0 32px 80px rgba(217, 145, 82, 0.18), 0 0 0 1px rgba(255,255,255,0.6);
+}
+.pricing-badge--neutral {
+  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
 }
 .pricing-badge {
   background: linear-gradient(90deg, #b45309, #d97706);
@@ -1805,14 +2275,9 @@ button svg {
   text-decoration: none;
 }
 
-.builder-brand-lockup .brand-mark {
-  height: 46px;
-  width: 46px;
-}
-
-.builder-brand-lockup p {
-  font-size: 1.05rem;
-}
+/* No builder-specific brand mark overrides — the brand lockup is now
+   visually identical to the landing topbar (42x42 SVG, same font sizes,
+   same gap, same corner radius). */
 
 .builder-back-button {
   align-items: center;
@@ -4149,6 +4614,141 @@ textarea:focus {
 
 .pay-button:hover {
   filter: brightness(1.05);
+}
+
+/* ─── Two-tier pay picker ─────────────────────────────────── */
+.pay-plan-picker {
+  align-items: stretch;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pay-plan-btn {
+  align-items: flex-start;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  border: 1.5px solid rgba(15, 118, 110, 0.18);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(19, 34, 56, 0.06);
+  color: #13202b;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 1 220px;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  padding: 12px 16px;
+  position: relative;
+  text-align: left;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.pay-plan-btn:hover {
+  border-color: var(--accent);
+  box-shadow: 0 10px 28px rgba(15, 118, 110, 0.18);
+  transform: translateY(-2px);
+}
+
+.pay-plan-title {
+  align-items: center;
+  display: inline-flex;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  gap: 8px;
+}
+
+.pay-plan-sub {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.pay-plan-btn--weekly {
+  background: linear-gradient(135deg, #fffaf0, #fff6e6);
+  border-color: rgba(180, 83, 9, 0.35);
+}
+
+.pay-plan-btn--weekly .pay-plan-title {
+  color: #7c2d12;
+}
+
+.pay-plan-badge {
+  background: linear-gradient(135deg, #b45309, #d97706);
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  text-transform: uppercase;
+  width: max-content;
+}
+
+/* ─── Active subscription badge (shown in place of pay button) ── */
+.subscription-active-card {
+  background: linear-gradient(135deg, #f0fdf9, #ecfdf5);
+  border: 1.5px solid rgba(15, 118, 110, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(15, 118, 110, 0.14);
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 16px;
+  text-align: left;
+}
+
+.subscription-active-head {
+  align-items: baseline;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.subscription-active-badge {
+  background: var(--accent);
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 3px 9px;
+  text-transform: uppercase;
+}
+
+.subscription-active-head strong {
+  color: #134e4a;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.subscription-active-meta {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* Slim "weekly pass remaining" badge for the builder Form */
+.weekly-pass-pill {
+  align-items: center;
+  background: rgba(15, 118, 110, 0.1);
+  border: 1px solid rgba(15, 118, 110, 0.3);
+  border-radius: 999px;
+  color: var(--accent);
+  display: inline-flex;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  gap: 8px;
+  padding: 6px 14px;
+}
+
+.weekly-pass-pill .weekly-pass-pill-count {
+  background: var(--accent);
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.7rem;
+  padding: 2px 8px;
 }
 
 .pay-cluster {

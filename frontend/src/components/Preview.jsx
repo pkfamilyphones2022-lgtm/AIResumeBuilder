@@ -3,7 +3,11 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import axios from "axios";
 import { AlertTriangle, CheckCircle2, Download, FileEdit, LockKeyhole, Mail, Palette, Plus, Trash2, X } from "lucide-react";
-import { clearPaymentToken, getPaymentTokenPayload, payNow, restorePaymentToken } from "./Payment.jsx";
+import {
+  clearPaymentToken, getPaymentTokenPayload, payNow, restorePaymentToken,
+  consumeSubscriptionDownload, getSubscription, refreshSubscriptionStatus, saveSubscription,
+  clearSubscription
+} from "./Payment.jsx";
 import { normalizeResumeData, resumeToPlainText, templateCatalog } from "./resumeUtils.js";
 
 const resumeVerifyChecks = [
@@ -396,6 +400,8 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
   const [paid, setPaid] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const [checkingPayment, setCheckingPayment] = useState(true);
+  const [selectedPlan, setSelectedPlan] = useState("single"); // 'single' | 'weekly'
+  const [subscription, setSubscription] = useState(() => getSubscription());
   const [fileEmailStatus, setFileEmailStatus] = useState("idle"); // idle | sending | sent | failed
   const [showEmailWarning, setShowEmailWarning] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(defaultTemplate || templateCatalog[0].id);
@@ -439,6 +445,12 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
 
     setCheckingPayment(true);
     setPaid(false);
+    // Refresh the locally cached subscription against the server so the
+    // "X remaining" badge reflects truth (the user may have downloaded on
+    // another device, or the 7-day window may have expired since last visit).
+    refreshSubscriptionStatus().then((live) => {
+      setSubscription(live || null);
+    }).catch(() => {});
     restorePaymentToken(paymentScope).then((valid) => {
       if (valid) setPaid(true);
       setCheckingPayment(false);
@@ -738,6 +750,34 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
 
   const confirmDownload = async () => {
     setShowWarning(false);
+
+    // Weekly Pass takes precedence — if an active subscription exists, decrement
+    // its server-side counter, then run the download. No per-resume token needed.
+    if (subscription && subscription.remaining > 0) {
+      const consumed = await consumeSubscriptionDownload();
+      if (!consumed || !consumed.ok) {
+        setSubscription(null);
+        setPaymentError("Your Weekly Pass has expired or hit its download cap. Please buy a new one or use the single-resume option.");
+        return;
+      }
+      await runDownload();
+      const updatedSub = {
+        ...subscription,
+        downloadsUsed: consumed.downloadsUsed,
+        emailsUsed: consumed.emailsUsed ?? subscription.emailsUsed ?? 0,
+        remaining: consumed.remaining
+      };
+      setSubscription(updatedSub);
+      saveSubscription(updatedSub);
+      setPaymentError(
+        consumed.remaining > 0
+          ? `Download complete. ${consumed.remaining} of ${subscription.downloadsLimit || 15} uses left on your Weekly Pass.`
+          : "Download complete. Your Weekly Pass has reached its 15-use limit."
+      );
+      return;
+    }
+
+    // Single-purchase flow.
     const valid = await restorePaymentToken(paymentScope);
     if (!valid) {
       setPaid(false);
@@ -777,6 +817,16 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
   const generateAndEmailFiles = async (emailOverride) => {
     const targetEmail = emailOverride || userEmail;
     if (!targetEmail) return;
+
+    // If the user is on a Weekly Pass, this email send counts against the
+    // 15-use cap. Pre-flight check so we don't render files for nothing.
+    const liveSub = subscription || getSubscription();
+    if (liveSub && liveSub.remaining <= 0) {
+      setFileEmailStatus("failed");
+      setPaymentError("Your Weekly Pass has hit its 15-use limit. Buy a new pass to keep sending.");
+      return;
+    }
+
     setFileEmailStatus("sending");
     const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -868,7 +918,8 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
       }
 
       const tokenPayload = getPaymentTokenPayload();
-      await axios.post(`${API}/payment/email-attachments`, {
+      const sub = subscription || getSubscription();
+      const response = await axios.post(`${API}/payment/email-attachments`, {
         name: userName,
         email: targetEmail,
         resumeTitle: resume.title,
@@ -876,22 +927,47 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
         docxBase64,
         userId,
         resumeId,
-        orderId: tokenPayload?.orderId
+        orderId: tokenPayload?.orderId,
+        subscription: sub ? { email: sub.email, token: sub.token } : undefined
       });
+
+      // Server decremented the Weekly Pass — refresh local counters.
+      if (response.data?.subscription?.ok && sub) {
+        const updated = { ...sub, ...response.data.subscription };
+        setSubscription(updated);
+        saveSubscription(updated);
+      }
 
       setFileEmailStatus("sent");
     } catch (err) {
       console.error("[emailFiles] Failed:", err.message);
+      // 410 from server → pass expired/exhausted server-side
+      if (err.response?.status === 410) {
+        clearSubscription?.();
+        setSubscription(null);
+        setPaymentError(err.response.data?.error || "Your Weekly Pass is no longer valid.");
+      }
       setFileEmailStatus("failed");
     }
   };
 
-  const startPayment = async () => {
+  const startPayment = async (planType = selectedPlan) => {
     setPaymentError("");
+    if (planType === "weekly" && !userEmail) {
+      setPaymentError("The Weekly Pass needs a valid email address — please add it in the builder before checkout.");
+      return;
+    }
     await payNow(
-      { userId, resumeId, paymentScope, userName, userEmail, resumeTitle: resume.title, resumeData: result },
-      () => {
+      {
+        userId, resumeId, paymentScope, userName, userEmail,
+        resumeTitle: resume.title, resumeData: result,
+        planType
+      },
+      (result) => {
         setPaid(true);
+        if (result?.subscription) {
+          setSubscription(result.subscription);
+        }
         if (userEmail) setShowEmailWarning(true);
       },
       (message) => setPaymentError(message)
@@ -1236,11 +1312,40 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
                 Review the completed resume below, switch templates, and then edit any section you want.
               </p>
             </div>
-            {checkingPayment ? null : !paid ? (
-              <button className="pay-button" onClick={startPayment}>
-                <LockKeyhole aria-hidden="true" />
-                Pay Rs.69
-              </button>
+            {checkingPayment ? null : subscription && subscription.remaining > 0 ? (
+              <div className="subscription-active-card">
+                <div className="subscription-active-head">
+                  <span className="subscription-active-badge">Weekly Pass</span>
+                  <strong>{subscription.remaining} of {subscription.downloadsLimit || 15} uses left</strong>
+                </div>
+                <span className="subscription-active-meta">
+                  {subscription.downloadsUsed ?? 0} downloads · {subscription.emailsUsed ?? 0} emails ·
+                  {" "}Expires {new Date(subscription.expiresAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+                </span>
+              </div>
+            ) : !paid ? (
+              <div className="pay-plan-picker">
+                <button
+                  className="pay-plan-btn pay-plan-btn--single"
+                  onClick={() => startPayment("single")}
+                  type="button"
+                >
+                  <span className="pay-plan-title">
+                    <LockKeyhole aria-hidden="true" />
+                    Pay Rs.51
+                  </span>
+                  <span className="pay-plan-sub">Single resume download</span>
+                </button>
+                <button
+                  className="pay-plan-btn pay-plan-btn--weekly"
+                  onClick={() => startPayment("weekly")}
+                  type="button"
+                >
+                  <span className="pay-plan-badge">SPECIAL OFFER</span>
+                  <span className="pay-plan-title">Weekly Pass — Rs.199</span>
+                  <span className="pay-plan-sub">15 uses (download / email) · 7 days</span>
+                </button>
+              </div>
             ) : (
               <div className="download-group">
                 <label className="download-format">

@@ -23,7 +23,7 @@ The app is currently deployed and accepting real Razorpay payments.
 | API (backend) | Railway | https://airesumebuilder-production-54d5.up.railway.app |
 | Database (SQLite + WAL) | Railway persistent volume mounted at `/data` | `/data/database.sqlite` |
 | Email delivery | Resend HTTPS API | `onboarding@resend.dev` sandbox; domain verification for `resumealignai.online` in progress |
-| Payment gateway | Razorpay | flat Rs.69 per resume; International Cards activation pending |
+| Payment gateway | Razorpay | flat Rs.51 per resume; International Cards activation pending |
 | Support email | Custom domain mailbox | `support@resumealignai.online` |
 
 Notes:
@@ -79,7 +79,7 @@ Notes:
 
 ### Payment and delivery
 
-- Razorpay checkout at a server-authoritative flat price of **Rs.69 per resume session**. The price is computed server-side and cannot be overridden by the client.
+- Razorpay checkout at a server-authoritative flat price of **Rs.51 per resume session**. The price is computed server-side and cannot be overridden by the client.
 - HMAC-SHA256 signature verification with `crypto.timingSafeEqual` for the Razorpay payment signature.
 - One successful payment token supports one tracked download. Replays of the same token are rejected server-side.
 - Failed signature verification flips the payment row from `pending` to `failed` automatically.
@@ -345,7 +345,7 @@ Resume and ATS endpoints:
 
 Payment, download, and email endpoints:
 
-- `POST /api/payment/quote` - return the server-authoritative Rs.69 quote.
+- `POST /api/payment/quote` - return the server-authoritative Rs.51 quote.
 - `POST /api/payment/order` - create a Razorpay order.
 - `POST /api/payment/verify` - verify Razorpay signature and issue a paid access token.
 - `POST /api/payment/check` - validate an existing paid access token.
@@ -410,7 +410,7 @@ AI usage logs include provider, model, prompt tokens, completion tokens, total t
 1. The user generates and previews the resume for free.
 2. Download stays locked until payment.
 3. The frontend requests a server quote and Razorpay order.
-4. The server creates a Rs.69 Razorpay order and stores a pending payment.
+4. The server creates a Rs.51 Razorpay order and stores a pending payment.
 5. Razorpay returns order, payment, and signature details.
 6. The backend verifies the signature.
 7. The backend marks the payment successful and sends a payment confirmation email.

@@ -94,6 +94,28 @@ const createTables = (db) => {
       FOREIGN KEY (user_id)   REFERENCES users(id),
       FOREIGN KEY (resume_id) REFERENCES resumes(id)
     );
+
+    -- Weekly Pass subscriptions. One active row per email — creating a new
+    -- active sub for an email flips prior active rows to status='replaced'
+    -- (enforced in queries.createSubscription).
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+      email               TEXT    NOT NULL,
+      token               TEXT    NOT NULL UNIQUE,
+      plan_type           TEXT    NOT NULL DEFAULT 'weekly',
+      downloads_limit     INTEGER NOT NULL DEFAULT 15,
+      downloads_used      INTEGER NOT NULL DEFAULT 0,
+      emails_used         INTEGER NOT NULL DEFAULT 0,
+      expires_at          DATETIME NOT NULL,
+      status              TEXT    NOT NULL DEFAULT 'active',
+      razorpay_payment_id TEXT,
+      razorpay_order_id   TEXT,
+      amount_paise        INTEGER,
+      created_at          DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_email  ON subscriptions(email);
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_token  ON subscriptions(token);
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
   `);
 };
 
@@ -102,5 +124,10 @@ const runMigrations = (db) => {
   if (!emailColumns.includes("created_at")) {
     db.exec("ALTER TABLE emails ADD COLUMN created_at DATETIME");
     db.exec("UPDATE emails SET created_at = COALESCE(sent_at, CURRENT_TIMESTAMP) WHERE created_at IS NULL");
+  }
+
+  const subColumns = db.prepare("PRAGMA table_info(subscriptions)").all().map((column) => column.name);
+  if (!subColumns.includes("emails_used")) {
+    db.exec("ALTER TABLE subscriptions ADD COLUMN emails_used INTEGER NOT NULL DEFAULT 0");
   }
 };
