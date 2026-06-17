@@ -69,6 +69,22 @@ export default function RefundPolicy({ onBack, theme, onToggleTheme }) {
           </ul>
         </section>
 
+        <section className="privacy-deletion">
+          <h2>2a. Important — 24-hour data retention window</h2>
+          <p>
+            Per our <a href="/privacy">Privacy Policy</a>, your resume content (work history, projects,
+            generated bullets) is automatically deleted from our database within 24 hours of generation. This
+            is by design — we treat your career data as sensitive and do not retain it longer than necessary.
+          </p>
+          <p>
+            <strong>Please download your PDF and DOCX immediately after payment.</strong> We cannot retrieve
+            or resend the resume content after 24 hours because we no longer have it. Refund eligibility for
+            content-quality complaints (broken file, empty content, formatting errors) is therefore limited to
+            the 24-hour window — file a request from the same email you paid from, within 24 hours, and we will
+            verify against our payment record (which we do keep for 7 years).
+          </p>
+        </section>
+
         <section>
           <h2>3. When a refund will not be issued</h2>
           <p>The following are not eligible for refund:</p>

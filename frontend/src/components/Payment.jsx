@@ -172,7 +172,32 @@ export const payNow = async (context, onSuccess, onError) => {
       description,
       prefill: {
         name: userName || "",
-        email: userEmail || ""
+        email: userEmail || "",
+        method: "upi"
+      },
+      // Surface UPI / QR first — every extra field on checkout costs 5-10%
+      // conversion. UPI is one tap on mobile and a QR scan on desktop.
+      config: {
+        display: {
+          blocks: {
+            utpi: {
+              name: "Pay via UPI",
+              instruments: [
+                { method: "upi", flows: ["collect", "intent", "qr"] }
+              ]
+            },
+            other: {
+              name: "Other payment methods",
+              instruments: [
+                { method: "card" },
+                { method: "netbanking" },
+                { method: "wallet" }
+              ]
+            }
+          },
+          sequence: ["block.utpi", "block.other"],
+          preferences: { show_default_blocks: false }
+        }
       },
       handler: async (paymentResponse) => {
         try {

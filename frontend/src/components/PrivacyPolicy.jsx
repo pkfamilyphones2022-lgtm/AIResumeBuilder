@@ -101,9 +101,31 @@ export default function PrivacyPolicy({ onBack, theme, onToggleTheme }) {
         <section>
           <h2>5. How long we keep it</h2>
           <p>
-            We retain resume content and identity records for as long as needed to support our customers after purchase
-            (typically up to 24 months), unless you ask us to delete it earlier. Aggregated/anonymised metrics
-            (counts of resumes, revenue, AI cost) may be kept longer for business reporting.
+            <strong>Resume content (your work history, projects, education, AI-generated bullets)
+            is automatically deleted from our database within 24 hours of generation.</strong> An
+            hourly job scrubs the relevant columns; you do not need to request this.
+          </p>
+          <p>
+            What we keep beyond 24 hours, and why:
+          </p>
+          <ul>
+            <li>
+              <strong>Payment metadata</strong> (Razorpay order/payment IDs, amount, status) — retained for up to 7 years
+              as required for tax and refund processing. No card details are ever stored on our side.
+            </li>
+            <li>
+              <strong>Contact identifiers</strong> (name, email, phone) — retained only as long as needed to support a
+              refund request or a Weekly Pass that is still inside its validity window.
+            </li>
+            <li>
+              <strong>Anonymised metrics</strong> (resume counts, AI cost, revenue) — kept for business reporting.
+              These contain no personal data.
+            </li>
+          </ul>
+          <p>
+            <em>Practical consequence:</em> if you want a copy of the resume for your records, please download it
+            immediately after payment. We cannot retrieve or re-send the resume content after the 24-hour window
+            has passed because we no longer have it.
           </p>
         </section>
 

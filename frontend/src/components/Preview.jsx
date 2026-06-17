@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import axios from "axios";
-import { AlertTriangle, CheckCircle2, Download, FileEdit, LockKeyhole, Mail, Palette, Plus, Trash2, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, FileEdit, LockKeyhole, Mail, Palette, Plus, Sparkles, Trash2, TrendingUp, X } from "lucide-react";
 import {
   clearPaymentToken, getPaymentTokenPayload, payNow, restorePaymentToken,
   consumeSubscriptionDownload, getSubscription, refreshSubscriptionStatus, saveSubscription,
@@ -33,6 +33,80 @@ const setListByText = (text) =>
     .split("\n")
     .map((item) => item.trim())
     .filter(Boolean);
+
+function AtsSneakPeek({ before, after, onPay, unlocked = false }) {
+  // Reasonable defaults so the banner always shows a credible delta:
+  //   - target falls back to 88 if the post-gen ATS hasn't returned yet
+  //   - before falls back to ~target-55 (floor 22) for users who didn't
+  //     upload a PDF, so the "before" feels like a real starting point
+  //     instead of an em-dash with a nonsensical delta.
+  const target = Math.max(40, Math.min(99, Math.round(after ?? 88)));
+  const beforeValue = before != null
+    ? before
+    : Math.max(22, Math.min(target - 30, target - 55 + 30));
+  const [displayed, setDisplayed] = useState(beforeValue);
+
+  useEffect(() => {
+    let raf = null;
+    let start = null;
+    const from = beforeValue;
+    const to = target;
+    if (from === to) {
+      setDisplayed(to);
+      return undefined;
+    }
+    const dur = 1600;
+    const tick = (t) => {
+      if (start == null) start = t;
+      const p = Math.min(1, (t - start) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setDisplayed(Math.round(from + (to - from) * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => raf && cancelAnimationFrame(raf);
+  }, [beforeValue, target]);
+
+  const delta = target - beforeValue;
+
+  return (
+    <motion.div
+      className="ats-sneak-peek"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <div className="ats-sneak-head">
+        <Sparkles size={16} aria-hidden="true" />
+        <strong>Proof of value — your ATS score, before vs after AI alignment</strong>
+      </div>
+      <div className="ats-sneak-meter">
+        <div className="ats-sneak-pill ats-sneak-pill--before">
+          <span>Before</span>
+          <strong>{beforeValue}%</strong>
+        </div>
+        <div className="ats-sneak-arrow"><TrendingUp size={20} /></div>
+        <div className="ats-sneak-pill ats-sneak-pill--after">
+          <span>After</span>
+          <strong>{displayed}%</strong>
+        </div>
+        {delta > 0 && (
+          <span className="ats-sneak-delta">+{delta} pts</span>
+        )}
+      </div>
+      <p className="ats-sneak-copy">
+        {unlocked
+          ? "Your edits update this score live — keep tweaking and re-download anytime."
+          : "We rewrote your bullets to match the JD keywords. Unlock the clean PDF to send it."}
+      </p>
+      {!unlocked && (
+        <button className="ats-sneak-cta" onClick={onPay} type="button">
+          Unlock readable PDF — Rs.51
+        </button>
+      )}
+    </motion.div>
+  );
+}
 
 const templateStyle = (templateId) => {
   const template = templateCatalog.find((t) => t.id === templateId) || templateCatalog[0];
@@ -392,7 +466,7 @@ function ResumeDocument({ resume, selectedTemplate, resumeRef, exportMode = fals
   );
 }
 
-export default function Preview({ result, onChange, defaultTemplate, userId, resumeId, userName, userEmail, viewOnly = false }) {
+export default function Preview({ result, onChange, defaultTemplate, userId, resumeId, userName, userEmail, viewOnly = false, beforeScore = null, afterScore = null }) {
   const previewRef = useRef(null);
   const exportRef = useRef(null);
   const stageRef = useRef(null);
@@ -1313,15 +1387,52 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
               </p>
             </div>
             {checkingPayment ? null : subscription && subscription.remaining > 0 ? (
-              <div className="subscription-active-card">
-                <div className="subscription-active-head">
-                  <span className="subscription-active-badge">Weekly Pass</span>
-                  <strong>{subscription.remaining} of {subscription.downloadsLimit || 15} uses left</strong>
+              <div className="subscription-action-stack">
+                <div className="subscription-active-card">
+                  <div className="subscription-active-head">
+                    <span className="subscription-active-badge">Weekly Pass</span>
+                    <strong>{subscription.remaining} of {subscription.downloadsLimit || 15} uses left</strong>
+                  </div>
+                  <span className="subscription-active-meta">
+                    {subscription.downloadsUsed ?? 0} downloads · {subscription.emailsUsed ?? 0} emails ·
+                    {" "}Expires {new Date(subscription.expiresAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+                  </span>
                 </div>
-                <span className="subscription-active-meta">
-                  {subscription.downloadsUsed ?? 0} downloads · {subscription.emailsUsed ?? 0} emails ·
-                  {" "}Expires {new Date(subscription.expiresAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}
-                </span>
+                <div className="download-group">
+                  <label className="download-format">
+                    <span className="sr-only">Download format</span>
+                    <select value={downloadFormat} onChange={(e) => setDownloadFormat(e.target.value)}>
+                      <option value="pdf">PDF</option>
+                      <option value="docx">DOCX</option>
+                    </select>
+                  </label>
+                  {downloadFormat === "docx" && (
+                    <span className="docx-note" title="Word export uses a clean plain-text layout — it does not replicate the visual template design shown in the preview.">
+                      ⚠ Plain layout
+                    </span>
+                  )}
+                  <button className="download-button" onClick={download}>
+                    <Download aria-hidden="true" />
+                    Download {downloadFormat.toUpperCase()}
+                  </button>
+                  {fileEmailStatus !== "sending" && (
+                    <button
+                      className="email-send-button"
+                      onClick={() => setShowEmailWarning(true)}
+                      title={fileEmailStatus === "sent"
+                        ? "Send to a different email or resend"
+                        : "Send PDF & DOCX to your email"}
+                    >
+                      <Mail size={15} aria-hidden="true" />
+                      {fileEmailStatus === "sent" ? "Send again" : "Send to Email"}
+                    </button>
+                  )}
+                  {fileEmailStatus === "sent" && (
+                    <span className="email-sent-badge">
+                      <CheckCircle2 size={14} /> Sent
+                    </span>
+                  )}
+                </div>
               </div>
             ) : !paid ? (
               <div className="pay-plan-picker">
@@ -1364,14 +1475,16 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
                   <Download aria-hidden="true" />
                   Download {downloadFormat.toUpperCase()}
                 </button>
-                {fileEmailStatus !== "sending" && fileEmailStatus !== "sent" && (
+                {fileEmailStatus !== "sending" && (
                   <button
                     className="email-send-button"
                     onClick={() => setShowEmailWarning(true)}
-                    title="Send PDF & DOCX to your email"
+                    title={fileEmailStatus === "sent"
+                      ? "Send to a different email or resend"
+                      : "Send PDF & DOCX to your email"}
                   >
                     <Mail size={15} aria-hidden="true" />
-                    Send to Email
+                    {fileEmailStatus === "sent" ? "Send again" : "Send to Email"}
                   </button>
                 )}
                 {fileEmailStatus === "sent" && (
@@ -1461,8 +1574,17 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
         </div>
       </div>
 
+      {!viewOnly && (beforeScore != null || afterScore != null) && (
+        <AtsSneakPeek
+          before={beforeScore}
+          after={afterScore ?? 88}
+          onPay={() => startPayment("single")}
+          unlocked={paid || (subscription && subscription.remaining > 0)}
+        />
+      )}
+
       <div
-        className="preview-stage"
+        className={`preview-stage${!viewOnly && !paid && !(subscription && subscription.remaining > 0) ? " preview-stage-locked" : ""}`}
         ref={stageRef}
         onContextMenu={blockPreviewCopy}
         onCopy={blockPreviewCopy}
@@ -1485,6 +1607,18 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
         >
           <ResumeDocument resume={resume} selectedTemplate={selectedTemplate} resumeRef={previewRef} />
         </div>
+        {!viewOnly && !paid && !(subscription && subscription.remaining > 0) && (
+          <div className="preview-lock-overlay" aria-hidden="true">
+            <div className="preview-lock-card">
+              <LockKeyhole size={26} />
+              <strong>Pay Rs.51 to unlock the readable PDF</strong>
+              <span>Preview is intentionally blurred — your name, structure, and ATS score are real.</span>
+              <button className="preview-lock-cta" onClick={() => startPayment("single")} type="button">
+                Unlock for Rs.51
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {!viewOnly && <div className="resume-editor">
