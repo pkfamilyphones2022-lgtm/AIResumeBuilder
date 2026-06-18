@@ -245,6 +245,18 @@ const routes = [
       </main>
       <footer><a href="/">Home</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/refund-policy">Refunds</a> &middot; <a href="mailto:support@resumealignai.online">support@resumealignai.online</a></footer>
     `
+  },
+  {
+    path: "/admin",
+    title: "Admin · ResumeAlignAI",
+    description: "Token-protected internal admin dashboard.",
+    noindex: true,
+    content: `
+      <main>
+        <h1>Admin</h1>
+        <p>This is the token-protected internal admin dashboard. If JavaScript is disabled or the page does not load, contact support.</p>
+      </main>
+    `
   }
 ];
 
@@ -264,6 +276,11 @@ const buildRouteHtml = (route) => {
 
   // Update <title>
   html = replaceTag(html, /<title>[^<]*<\/title>/, `<title>${route.title}</title>`);
+
+  // Internal/private routes get a robots noindex so crawlers don't show them.
+  if (route.noindex) {
+    html = html.replace(/<\/head>/, `<meta name="robots" content="noindex, nofollow" /></head>`);
+  }
 
   // Update meta description
   html = replaceTag(
