@@ -19,6 +19,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { RESOURCES, RESOURCES_INDEX } from "../src/content/resources.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = resolve(__dirname, "..", "dist");
@@ -256,6 +257,92 @@ const routes = [
         <h1>Admin</h1>
         <p>This is the token-protected internal admin dashboard. If JavaScript is disabled or the page does not load, contact support.</p>
       </main>
+    `
+  },
+  {
+    path: "/resources",
+    title: RESOURCES_INDEX.title,
+    description: RESOURCES_INDEX.description,
+    content: `
+      <header>
+        <nav aria-label="Primary">
+          <a href="/" rel="home"><strong>ResumeAlignAI Premium</strong></a>
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/builder">Build Resume</a></li>
+            <li><a href="/samples">Samples</a></li>
+            <li><a href="/resources">Resources</a></li>
+          </ul>
+        </nav>
+      </header>
+      <main>
+        <h1>Free guides &amp; resources for your job search</h1>
+        ${RESOURCES_INDEX.body}
+      </main>
+      <footer><a href="/">Home</a> &middot; <a href="/builder">Builder</a> &middot; <a href="/privacy">Privacy</a></footer>
+    `
+  },
+  ...RESOURCES.map((article) => ({
+    path: `/resources/${article.slug}`,
+    title: article.title,
+    description: article.description,
+    content: `
+      <header>
+        <nav aria-label="Primary">
+          <a href="/" rel="home"><strong>ResumeAlignAI Premium</strong></a>
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/builder">Build Resume</a></li>
+            <li><a href="/resources">All Resources</a></li>
+          </ul>
+        </nav>
+      </header>
+      <main>
+        <article>
+          <a href="/resources">← All resources</a>
+          <h1>${article.title}</h1>
+          <p><em>${article.description}</em></p>
+          <p><small>Published ${article.publishedAt}</small></p>
+          ${article.body}
+        </article>
+      </main>
+      <footer><a href="/">Home</a> &middot; <a href="/builder">Build a resume — Rs.51</a> &middot; <a href="/privacy">Privacy</a></footer>
+    `
+  })),
+  {
+    path: "/refer",
+    title: "Refer a Friend — ResumeAlignAI",
+    description: "Help a friend who's job hunting. Send a warm, personal invite to ResumeAlignAI — one email, no follow-ups, no spam.",
+    content: `
+      <header>
+        <nav aria-label="Primary">
+          <a href="/" rel="home"><strong>ResumeAlignAI Premium</strong></a>
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/builder">Build Resume</a></li>
+            <li><a href="/samples">Samples</a></li>
+          </ul>
+        </nav>
+      </header>
+      <main>
+        <h1>Refer ResumeAlignAI to a friend who's job hunting</h1>
+        <p>Help a friend land their next role. We'll send them one warm, personal intro email — no spam, no drip campaigns, no list signup.</p>
+        <h2>What your friend gets</h2>
+        <ul>
+          <li>A clear intro naming you so they know who sent it.</li>
+          <li>Your optional personal note in a highlighted callout.</li>
+          <li>Honest pricing (Rs.51 single resume or Rs.199 Weekly Pass) and our 24-hour data privacy promise.</li>
+          <li>One button to try the builder. Nothing else.</li>
+        </ul>
+        <h2>Anti-spam rules we enforce</h2>
+        <ul>
+          <li>Max 5 invites per hour per device.</li>
+          <li>Same friend can only be invited once every 24 hours.</li>
+          <li>We never email them again unless they sign up directly.</li>
+        </ul>
+        <p><a href="/">Back to Home</a></p>
+      </main>
+      <footer><a href="/">Home</a> &middot; <a href="/builder">Build Resume</a> &middot; <a href="/privacy">Privacy</a></footer>
     `
   }
 ];

@@ -35,6 +35,8 @@ import AdminPanel from "./components/AdminPanel.jsx";
 import Samples from "./components/Samples.jsx";
 import PrivacyPolicy from "./components/PrivacyPolicy.jsx";
 import RefundPolicy from "./components/RefundPolicy.jsx";
+import ReferralPage from "./components/ReferralPage.jsx";
+import ResourcesPage from "./components/ResourcesPage.jsx";
 import TermsOfService from "./components/TermsOfService.jsx";
 import BrandMark from "./components/BrandMark.jsx";
 import { sampleResumes } from "./components/sampleResumes.js";
@@ -638,6 +640,11 @@ export default function App() {
   const isPrivacyPage = pathname === "/privacy";
   const isRefundPage = pathname === "/refund-policy";
   const isTermsPage = pathname === "/terms";
+  const isReferralPage = pathname === "/refer";
+  const isResourcesPage = pathname === "/resources" || pathname.startsWith("/resources/");
+  const resourceSlug = isResourcesPage && pathname.startsWith("/resources/")
+    ? pathname.slice("/resources/".length).replace(/\/$/, "")
+    : null;
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -667,6 +674,20 @@ export default function App() {
 
   if (isRefundPage) {
     return <RefundPolicy onBack={() => navigateTo("/", setPathname)} theme={theme} onToggleTheme={toggleTheme} />;
+  }
+
+  if (isReferralPage) {
+    return <ReferralPage onBack={() => navigateTo("/", setPathname)} />;
+  }
+
+  if (isResourcesPage) {
+    return (
+      <ResourcesPage
+        slug={resourceSlug}
+        onBack={() => navigateTo("/", setPathname)}
+        onNavigate={(p) => navigateTo(p, setPathname)}
+      />
+    );
   }
 
   if (isTermsPage) {
@@ -1493,6 +1514,18 @@ export default function App() {
             <a href="#features">Features</a>
             <a href="#faq">FAQ</a>
             <a href="#contact">Contact</a>
+            <a
+              href="/resources"
+              onClick={(e) => { e.preventDefault(); navigateTo("/resources", setPathname); }}
+            >
+              Resources
+            </a>
+            <a
+              href="/refer"
+              onClick={(e) => { e.preventDefault(); navigateTo("/refer", setPathname); }}
+            >
+              Refer a Friend
+            </a>
             <a
               href="/privacy"
               onClick={(e) => { e.preventDefault(); navigateTo("/privacy", setPathname); }}
