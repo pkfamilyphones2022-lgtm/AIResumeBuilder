@@ -40,6 +40,81 @@ const computeBeforeScore = (resumeText, jobText) => {
   return Math.max(18, Math.min(65, pct));
 };
 
+// Build a placeholder resume result for the locked preview. We use the
+// user's real name/title/contact so the header looks personal, but the
+// bullets/summary are filler since the preview body is blurred anyway
+// pre-payment. This is what lets us defer the LLM call until payment
+// is confirmed — no more burning tokens for non-paying users.
+const PLACEHOLDER_LINE = "Detailed AI-aligned bullet that will be revealed after payment unlocks your resume.";
+const PLACEHOLDER_BULLET = "AI-rewritten responsibility tailored to the target job description.";
+
+const buildPlaceholderResult = (form) => {
+  const skillsFromForm = String(form.skills || "")
+    .split(/[\n,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const defaultSkills = ["Communication", "Problem Solving", "Project Management", "Stakeholder Engagement", "Process Improvement", "Analytical Thinking"];
+  const skills = skillsFromForm.length >= 5 ? skillsFromForm.slice(0, 12) : defaultSkills;
+
+  const fakeBullets = (n) => Array.from({ length: n }, () => PLACEHOLDER_BULLET);
+
+  const expFromForm = (form.experiences || []).filter((e) => e.role || e.company);
+  const experience = expFromForm.length > 0
+    ? expFromForm.slice(0, 3).map((e) => ({
+        role: e.role || "Senior Role",
+        company: e.company || "Target Company",
+        duration: e.duration || "MMM YYYY — Present",
+        location: e.location || "City, State",
+        bullets: fakeBullets(4)
+      }))
+    : [
+        { role: form.targetTitle || "Target Role", company: "Recent Employer", duration: "MMM YYYY — Present", location: "City, State", bullets: fakeBullets(4) },
+        { role: "Previous Role", company: "Prior Employer", duration: "MMM YYYY — MMM YYYY", location: "City, State", bullets: fakeBullets(3) }
+      ];
+
+  const projFromForm = (form.projectsList || []).filter((p) => p.name);
+  const projects = projFromForm.length > 0
+    ? projFromForm.slice(0, 3).map((p) => ({ name: p.name, subtitle: p.subtitle || "", bullets: fakeBullets(3) }))
+    : [
+        { name: "Flagship Project", subtitle: "Internal Tool", bullets: fakeBullets(3) },
+        { name: "Cross-functional Initiative", subtitle: "Team Project", bullets: fakeBullets(2) }
+      ];
+
+  const education = (form.education && form.education.length > 0
+    ? form.education
+    : [{ degree: "Bachelor's Degree", institution: "Your University", duration: "YYYY — YYYY", details: "Relevant coursework" }]
+  ).map((e) => ({
+    degree: e.degree || "Bachelor's Degree",
+    institution: e.institution || "Your University",
+    duration: e.duration || "YYYY — YYYY",
+    details: e.details || "Relevant coursework"
+  }));
+
+  return {
+    fullName: form.name || "Your Name",
+    title: form.targetTitle || "Target Role",
+    candidateType: form.type,
+    contact: {
+      email: form.email || "you@example.com",
+      phone: form.phone || "+91 00000 00000",
+      location: form.location || "City, State",
+      linkedin: form.linkedin || "",
+      portfolio: form.portfolio || ""
+    },
+    summary: PLACEHOLDER_LINE + " " + PLACEHOLDER_LINE,
+    skills,
+    experience,
+    projects,
+    education,
+    certifications: [PLACEHOLDER_BULLET, PLACEHOLDER_BULLET],
+    achievements: [PLACEHOLDER_BULLET, PLACEHOLDER_BULLET],
+    languages: ["English", "Hindi"],
+    atsStrategy: { insertedKeywords: [] },
+    verification: { status: "", checkedLines: 0, lineChecks: [] },
+    isPlaceholder: true
+  };
+};
+
 const mkExp = () => ({ role: "", company: "", empType: "Full-time", duration: "", location: "", responsibilities: "" });
 const mkProject = () => ({ name: "", subtitle: "", duration: "", bullets: "" });
 const mkEdu = () => ({ degree: "", institution: "", duration: "", details: "" });
@@ -306,16 +381,14 @@ export default function Form({ mode = "experienced" }) {
     return null;
   };
 
-  const generate = async () => {
-    const validationError = validate();
-    if (validationError) { setError(validationError); return; }
-    setPreviewActive(true);
+  // Run the actual LLM-backed /generate call. Called only AFTER the user
+  // has paid (or has an active Weekly Pass) so we never burn tokens for
+  // a session that won't convert.
+  const runRealGeneration = async () => {
     setError("");
     setIsImproving(false);
     setLoading(true);
     setLoadingMsg("Building your AI resume…");
-    setResult(null);
-    setAtsData(null);
     try {
       const response = await axios.post(`${API}/generate`, {
         userData: buildUserData(),
@@ -327,23 +400,45 @@ export default function Form({ mode = "experienced" }) {
       });
       setResult(normalizeResumeData(response.data.result));
       setAtsData(response.data.ats || null);
-      // Snapshot a quick "before" score against the JD. This is what the
-      // sneak-peek Before -> After banner shows on the unpaid Preview.
-      // We flatten the entire user-submitted payload (including nested
-      // experience/projects/training arrays) into a single haystack string
-      // so manually-filled forms get a fair before-score, not just uploads.
-      const sourceText = (resumeText && resumeText.trim())
-        ? resumeText
-        : JSON.stringify(buildUserData());
-      setBeforeScore(computeBeforeScore(sourceText, form.job));
       if (response.data.userId) setUserId(response.data.userId);
       if (response.data.resumeId) setResumeId(response.data.resumeId);
+      return { ok: true };
     } catch (err) {
       setError(parseGenerateError(err));
       loadChallenge();
+      return { ok: false, error: err };
     } finally {
       setLoading(false);
     }
+  };
+
+  const generate = async () => {
+    const validationError = validate();
+    if (validationError) { setError(validationError); return; }
+    setPreviewActive(true);
+    setError("");
+    setIsImproving(false);
+    setAtsData(null);
+
+    // Snapshot a quick keyword-overlap "before" score against the JD —
+    // computed locally, no LLM call. Powers the Before -> After banner.
+    const sourceText = (resumeText && resumeText.trim())
+      ? resumeText
+      : JSON.stringify(buildUserData());
+    setBeforeScore(computeBeforeScore(sourceText, form.job));
+
+    // If the user already has an active Weekly Pass, they've paid —
+    // run real generation immediately.
+    const sub = getSubscription();
+    if (sub && sub.remaining > 0) {
+      await runRealGeneration();
+      return;
+    }
+
+    // Otherwise: show a placeholder result so the user sees a "locked
+    // preview" with their real name/title and blurred bullets. The real
+    // /generate API call fires later, after payment success.
+    setResult(buildPlaceholderResult(form));
   };
 
   const improve = async (missingKeywords, currentScore, failedChecks) => {
@@ -1160,15 +1255,17 @@ export default function Form({ mode = "experienced" }) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
             >
-              <ATSScore
-                resume={resumeToPlainText(result)}
-                job={form.job}
-                jobTitle={form.targetTitle || result.title}
-                initialData={atsData}
-                result={result}
-                onUpdateResume={setResult}
-                onImprove={improve}
-              />
+              {!result?.isPlaceholder && (
+                <ATSScore
+                  resume={resumeToPlainText(result)}
+                  job={form.job}
+                  jobTitle={form.targetTitle || result.title}
+                  initialData={atsData}
+                  result={result}
+                  onUpdateResume={setResult}
+                  onImprove={improve}
+                />
+              )}
               <Preview
                 result={result}
                 onChange={setResult}
@@ -1178,6 +1275,8 @@ export default function Form({ mode = "experienced" }) {
                 userEmail={form.email}
                 beforeScore={beforeScore}
                 afterScore={atsData?.score}
+                isPlaceholder={!!result?.isPlaceholder}
+                onPaidGenerate={runRealGeneration}
               />
             </motion.div>
           )}

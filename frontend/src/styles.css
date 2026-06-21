@@ -1829,6 +1829,31 @@ button svg {
   box-shadow: 0 14px 32px rgba(15, 118, 110, 0.32);
 }
 
+/* Locked editor — shown while the resume body is still a placeholder
+   (i.e. pre-payment). Keeps the section heading visible so users know
+   the editor is coming, without exposing placeholder bullets in inputs. */
+.resume-editor-locked {
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.05), rgba(67, 56, 202, 0.04));
+  border: 1px dashed rgba(15, 118, 110, 0.3);
+}
+.editor-locked-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  color: rgba(15, 23, 42, 0.7);
+  line-height: 1.5;
+}
+.editor-locked-note svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: #0f766e;
+}
+
 /* ── Preview lock overlay (heavy blur on body, lock card centered) ── */
 .preview-stage-locked {
   position: relative;

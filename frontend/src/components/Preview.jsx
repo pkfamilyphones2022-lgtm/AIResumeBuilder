@@ -34,7 +34,7 @@ const setListByText = (text) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-function AtsSneakPeek({ before, after, onPay, unlocked = false }) {
+function AtsSneakPeek({ before, after, onPay, unlocked = false, estimated = false }) {
   // Reasonable defaults so the banner always shows a credible delta:
   //   - target falls back to 88 if the post-gen ATS hasn't returned yet
   //   - before falls back to ~target-55 (floor 22) for users who didn't
@@ -78,7 +78,11 @@ function AtsSneakPeek({ before, after, onPay, unlocked = false }) {
     >
       <div className="ats-sneak-head">
         <Sparkles size={16} aria-hidden="true" />
-        <strong>Proof of value — your ATS score, before vs after AI alignment</strong>
+        <strong>
+          {estimated
+            ? "Expected uplift — your ATS score, before vs after AI alignment"
+            : "Proof of value — your ATS score, before vs after AI alignment"}
+        </strong>
       </div>
       <div className="ats-sneak-meter">
         <div className="ats-sneak-pill ats-sneak-pill--before">
@@ -97,7 +101,9 @@ function AtsSneakPeek({ before, after, onPay, unlocked = false }) {
       <p className="ats-sneak-copy">
         {unlocked
           ? "Your edits update this score live — keep tweaking and re-download anytime."
-          : "We rewrote your bullets to match the JD keywords. Unlock the clean PDF to send it."}
+          : estimated
+            ? "We'll rewrite your bullets to match the JD keywords as soon as you pay — most users land in the 85–92% range."
+            : "We rewrote your bullets to match the JD keywords. Unlock the clean PDF to send it."}
       </p>
       {!unlocked && (
         <button className="ats-sneak-cta" onClick={onPay} type="button">
@@ -466,7 +472,7 @@ function ResumeDocument({ resume, selectedTemplate, resumeRef, exportMode = fals
   );
 }
 
-export default function Preview({ result, onChange, defaultTemplate, userId, resumeId, userName, userEmail, viewOnly = false, beforeScore = null, afterScore = null }) {
+export default function Preview({ result, onChange, defaultTemplate, userId, resumeId, userName, userEmail, viewOnly = false, beforeScore = null, afterScore = null, isPlaceholder = false, onPaidGenerate = null }) {
   const previewRef = useRef(null);
   const exportRef = useRef(null);
   const stageRef = useRef(null);
@@ -1037,10 +1043,20 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
         resumeTitle: resume.title, resumeData: result,
         planType
       },
-      (result) => {
+      async (payResult) => {
         setPaid(true);
-        if (result?.subscription) {
-          setSubscription(result.subscription);
+        if (payResult?.subscription) {
+          setSubscription(payResult.subscription);
+        }
+        // If we showed a placeholder pre-payment, NOW run the real LLM
+        // call. The Preview will swap from blurred placeholder to the
+        // real resume once the response lands.
+        if (isPlaceholder && onPaidGenerate) {
+          const gen = await onPaidGenerate();
+          if (!gen?.ok) {
+            setPaymentError("Payment succeeded but resume generation failed. Please refresh and try again — your payment is recorded.");
+            return;
+          }
         }
         if (userEmail) setShowEmailWarning(true);
       },
@@ -1580,6 +1596,7 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
           after={afterScore ?? 88}
           onPay={() => startPayment("single")}
           unlocked={paid || (subscription && subscription.remaining > 0)}
+          estimated={isPlaceholder}
         />
       )}
 
@@ -1611,17 +1628,41 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
           <div className="preview-lock-overlay" aria-hidden="true">
             <div className="preview-lock-card">
               <LockKeyhole size={26} />
-              <strong>Pay Rs.51 to unlock the readable PDF</strong>
-              <span>Preview is intentionally blurred — your name, structure, and ATS score are real.</span>
+              <strong>
+                {isPlaceholder
+                  ? "Pay Rs.51 to generate your AI-aligned resume"
+                  : "Pay Rs.51 to unlock the readable PDF"}
+              </strong>
+              <span>
+                {isPlaceholder
+                  ? "We'll run the AI right after payment — no tokens are burned until you're committed. Header shows your real details; bullets are placeholders for now."
+                  : "Preview is intentionally blurred — your name, structure, and ATS score are real."}
+              </span>
               <button className="preview-lock-cta" onClick={() => startPayment("single")} type="button">
-                Unlock for Rs.51
+                {isPlaceholder ? "Generate & Unlock — Rs.51" : "Unlock for Rs.51"}
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {!viewOnly && <div className="resume-editor">
+      {!viewOnly && isPlaceholder && (
+        <div className="resume-editor resume-editor-locked">
+          <div className="editor-title">
+            <FileEdit aria-hidden="true" />
+            <div>
+              <strong>Edit generated content</strong>
+              <p>This editor unlocks after payment, when the AI generates your real bullets. Right now you're seeing a placeholder structure.</p>
+            </div>
+          </div>
+          <p className="editor-locked-note">
+            <LockKeyhole size={14} aria-hidden="true" />
+            <span>Click <strong>Generate &amp; Unlock — Rs.51</strong> above. The form below appears once the AI run completes, with all your real generated content ready to fine-tune.</span>
+          </p>
+        </div>
+      )}
+
+      {!viewOnly && !isPlaceholder && <div className="resume-editor">
           <div className="editor-title">
             <FileEdit aria-hidden="true" />
             <div>
@@ -1814,7 +1855,7 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
           ))}
       </div>}
 
-      {!viewOnly && <div className="resume-export-stage" aria-hidden="true">
+      {!viewOnly && !isPlaceholder && <div className="resume-export-stage" aria-hidden="true">
         <ResumeDocument resume={resume} selectedTemplate={selectedTemplate} resumeRef={exportRef} exportMode />
       </div>}
     </div>
