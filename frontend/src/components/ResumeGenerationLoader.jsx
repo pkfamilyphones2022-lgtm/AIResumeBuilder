@@ -36,7 +36,7 @@ const GENERATION_STEPS = [
   {
     emoji: "🎯",
     headline: (name) => `Optimising ${name ? `${name.split(" ")[0]}'s` : "your"} ATS score`,
-    detail:   () => "Pushing for 95%+ alignment before you see the result…"
+    detail:   () => "Pushing for up to 90% alignment before you see the result…"
   },
   {
     emoji: "✅",
@@ -73,7 +73,7 @@ const IMPROVE_STEPS = [
   },
   {
     emoji: "🎯",
-    headline: () => "Pushing for 95%+",
+    headline: () => "Pushing for up to 90%",
     detail:   () => "Fine-tuning keyword density and section alignment…"
   },
   {

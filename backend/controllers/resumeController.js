@@ -10,7 +10,7 @@ const atsGuidance = (score) =>
   score >= 95
     ? "Excellent ATS alignment. This resume is strongly matched to the target role and ready for final human review."
     : score >= 85
-    ? "Strong ATS score. Use Enhance more to push closer to the 95% target before applying."
+    ? "Strong ATS score. Use Enhance more to push closer to the 90% target before applying."
     : "This resume has been improved, but Enhance more can add missing role phrases and close ATS gaps.";
 
 const refineTowardTarget = async ({ result, userData, jobDescription, targetScore = 95, maxPasses = 2 }) => {

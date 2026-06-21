@@ -6,7 +6,7 @@ import { parseAtsError } from "../utils/apiError.js";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-const TARGET = 95;
+const TARGET = 90;
 
 function ScoreRing({ score }) {
   const r = 52;
@@ -95,7 +95,7 @@ export default function ATSScore({ resume, job, jobTitle, initialData, result, o
         response.data.score >= TARGET
           ? "Excellent! Your resume is well-optimised for this role."
           : response.data.score >= 75
-          ? "Good match — a few more targeted keywords can push you to 95%."
+          ? "Good match — a few more targeted keywords can push you to 90%."
           : "Boost your score by incorporating the suggested keywords below."
       );
     } catch (err) {
@@ -241,7 +241,7 @@ export default function ATSScore({ resume, job, jobTitle, initialData, result, o
                   whileTap={{ scale: 0.98 }}
                 >
                   <Sparkles size={16} />
-                  {boosting ? "AI is verifying and enhancing..." : "Enhance more to 95+ ATS"}
+                  {boosting ? "AI is verifying and enhancing..." : "Enhance more to 90+ ATS"}
                 </motion.button>
               )}
             </div>

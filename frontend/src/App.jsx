@@ -178,7 +178,7 @@ const journeySteps = [
   {
     icon: Target,
     step: "03",
-    title: "ATS score hits 95%+",
+    title: "ATS score hits up to 90%",
     text: "We measure keyword alignment and flag exactly what to fix before you apply.",
     color: "#b45309",
     tag: "ATS Analysis"
@@ -204,7 +204,7 @@ const pricingFeatures = [
 
 const animatedPhrases = [
   "AI writes every word",
-  "ATS score hits 95%+",
+  "ATS score hits up to 90%",
   "Keywords matched perfectly",
   "Recruiters get impressed",
   "Land more interviews"
@@ -252,7 +252,7 @@ const faqs = [
   },
   {
     q: "What is an ATS score and why does it matter?",
-    a: "ATS (Applicant Tracking System) is the software most companies use to filter resumes before a recruiter ever reads them. Our AI measures how well your resume matches the job description and gives a 0–100 score. A score of 95+ means you're far more likely to pass the filter and reach a human review."
+    a: "ATS (Applicant Tracking System) is the software most companies use to filter resumes before a recruiter ever reads them. Our AI measures how well your resume matches the job description and gives a 0–100 score. A score of 90 or above means you're far more likely to pass the filter and reach a human review."
   },
   {
     q: "Can I re-generate if I'm not happy with the result?",
@@ -411,7 +411,7 @@ function JourneyPipelineVertical({ steps, intervalMs = 2400 }) {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.35, delay: 0.1 }}
                     >
-                      <span className="journey-row-ats">95%</span> ATS match
+                      <span className="journey-row-ats">90%</span> ATS match
                     </motion.span>
                   )}
                   {step === "04" && isActive && (
@@ -529,7 +529,7 @@ function JourneyPipeline({ steps, onCta }) {
 
             {current.step === "03" && (
               <div className="journey-stage-extra">
-                <ATSRingMini score={95} delay={0.1} />
+                <ATSRingMini score={90} delay={0.1} />
                 <span>Live ATS scoring — keyword gaps flagged before you apply.</span>
               </div>
             )}
@@ -1024,13 +1024,13 @@ export default function App() {
                 <div className="ats-meter">
                   <motion.span
                     initial={{ width: 0 }}
-                    whileInView={{ width: "95%" }}
+                    whileInView={{ width: "90%" }}
                     viewport={{ once: true }}
                     transition={{ duration: 1, delay: 0.15 }}
                   />
                 </div>
               </div>
-              <b>95%</b>
+              <b>90%</b>
             </div>
 
             <div className="ats-aware-stats">

@@ -38,7 +38,7 @@ export const RESOURCES = [
       <p>Open the job description. Highlight every noun phrase that describes a skill, a tool, a methodology, or a deliverable. Now look at your resume. If a phrase is in the JD and not in your resume — and you actually have that skill — add it. Naturally. Inside a bullet that describes real work.</p>
       <p>Do not stuff. The recruiter who opens your resume after the ATS surfaces it is a human, and a wall of keywords looks ridiculous. The goal is parity: every JD skill you genuinely have should appear at least once, ideally in the context of a result you delivered.</p>
 
-      <h2>What a 95%+ ATS-aligned resume looks like</h2>
+      <h2>What an up-to-90% ATS-aligned resume looks like</h2>
       <ul>
         <li>Single column, standard headings, standard font.</li>
         <li>Contact details in the body, not the page header.</li>
@@ -49,7 +49,7 @@ export const RESOURCES = [
       </ul>
 
       <h2>How ResumeAlignAI fits in</h2>
-      <p>Our builder runs an ATS scoring pass against your generated resume and the job description you paste. It surfaces the exact missing keywords with one-click placement, runs an additional improvement pass toward 95%, and exports a clean text PDF that every major ATS parses correctly. <a href="/builder">Try the builder for Rs.51</a> if you want a working version in five minutes — or read on for our other resource articles.</p>
+      <p>Our builder runs an ATS scoring pass against your generated resume and the job description you paste. It surfaces the exact missing keywords with one-click placement, runs an additional improvement pass that targets up to a 90% match, and exports a clean text PDF that every major ATS parses correctly. <a href="/builder">Try the builder for Rs.51</a> if you want a working version in five minutes — or read on for our other resource articles.</p>
 
       <p><a href="/resources">← Back to all resources</a></p>
     `
