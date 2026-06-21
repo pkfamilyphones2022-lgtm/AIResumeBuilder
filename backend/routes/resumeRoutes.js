@@ -19,6 +19,7 @@ import {
   useSubscriptionDownload
 } from "../controllers/paymentController.js";
 import { adminDeleteUserData, adminOverview, adminSendResume, adminTriggerBackup, requireAdmin } from "../controllers/adminController.js";
+import { sendReferral } from "../controllers/referralController.js";
 
 const router = express.Router();
 
@@ -48,6 +49,7 @@ router.post("/payment/download", recordResumeDownload);
 router.post("/payment/email-attachments", emailResumeAttachments);
 router.post("/payment/subscription/status", getSubscriptionStatus);
 router.post("/payment/subscription/use", useSubscriptionDownload);
+router.post("/referral/send", sendReferral);
 router.get("/admin/overview", requireAdmin, adminOverview);
 router.post("/admin/resumes/:resumeId/send", requireAdmin, adminSendResume);
 router.post("/admin/users/delete-by-email", requireAdmin, adminDeleteUserData);

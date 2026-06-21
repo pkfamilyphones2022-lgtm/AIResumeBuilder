@@ -116,6 +116,24 @@ const createTables = (db) => {
     CREATE INDEX IF NOT EXISTS idx_subscriptions_email  ON subscriptions(email);
     CREATE INDEX IF NOT EXISTS idx_subscriptions_token  ON subscriptions(token);
     CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+
+    -- User-to-user referrals. One row per sent invite, used for both
+    -- spam guards (1 to the same friend per 24h) and growth analytics.
+    CREATE TABLE IF NOT EXISTS referrals (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      referrer_name   TEXT    NOT NULL,
+      referrer_email  TEXT    NOT NULL,
+      friend_name     TEXT,
+      friend_email    TEXT    NOT NULL,
+      personal_note   TEXT,
+      status          TEXT    NOT NULL DEFAULT 'queued',
+      ip              TEXT,
+      created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+      sent_at         DATETIME
+    );
+    CREATE INDEX IF NOT EXISTS idx_referrals_friend_email   ON referrals(friend_email);
+    CREATE INDEX IF NOT EXISTS idx_referrals_referrer_email ON referrals(referrer_email);
+    CREATE INDEX IF NOT EXISTS idx_referrals_created_at     ON referrals(created_at);
   `);
 };
 

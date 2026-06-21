@@ -426,3 +426,43 @@ export const consumeSubscriptionUse = (email, token, nowMs, kind = "download") =
 // Back-compat alias — old callers still import this name.
 export const consumeSubscriptionDownload = (email, token, nowMs) =>
   consumeSubscriptionUse(email, token, nowMs, "download");
+
+/* ─── Referrals ─── */
+
+export const createReferral = ({ referrerName, referrerEmail, friendName, friendEmail, personalNote, ip }) => {
+  const db = getDb();
+  const result = db
+    .prepare(
+      `INSERT INTO referrals
+        (referrer_name, referrer_email, friend_name, friend_email, personal_note, ip)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    .run(referrerName, referrerEmail, friendName || null, friendEmail, personalNote || null, ip || null);
+  return result.lastInsertRowid;
+};
+
+export const updateReferralStatus = (id, status) => {
+  const db = getDb();
+  return db
+    .prepare(
+      `UPDATE referrals
+       SET status = ?, sent_at = CASE WHEN ? = 'sent' THEN CURRENT_TIMESTAMP ELSE sent_at END
+       WHERE id = ?`
+    )
+    .run(status, status, id);
+};
+
+// Spam guard: did we already send a referral to this friend in the last 24h?
+export const wasFriendReferredRecently = (friendEmail, withinHours = 24) => {
+  const db = getDb();
+  const cutoff = new Date(Date.now() - withinHours * 60 * 60 * 1000).toISOString();
+  const row = db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM referrals
+       WHERE LOWER(friend_email) = LOWER(?)
+         AND created_at >= ?
+         AND status IN ('queued','sent')`
+    )
+    .get(friendEmail, cutoff);
+  return Number(row?.n || 0) > 0;
+};

@@ -543,3 +543,135 @@ export const sendResumeWithAttachments = async ({ name, email, resumeTitle, pdfB
     return { sent: false, reason: err.message };
   }
 };
+
+/* ─── Referral emails ─────────────────────────────────────── */
+
+const escapeHtml = (s) =>
+  String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+const buildReferralInviteHtml = ({ referrerName, friendName, personalNote }) => `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
+  <tr><td align="center">
+    <table cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;max-width:580px;width:100%;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+      ${emailHeader(`${escapeHtml(referrerName) || "A friend"} thinks ResumeAlignAI can help you`)}
+      <tr><td style="padding:36px 40px;">
+        <p style="color:#1e293b;font-size:16px;margin:0 0 16px;">Hi <strong>${escapeHtml(friendName) || "there"}</strong>,</p>
+        <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 18px;">
+          <strong>${escapeHtml(referrerName) || "Your friend"}</strong> just used ResumeAlignAI to build a sharper, ATS-aligned resume for a specific job — and thought you'd find it useful for your own job search.
+        </p>
+        ${personalNote ? `
+        <div style="background:#fff7ed;border-left:4px solid #f59e0b;border-radius:8px;padding:16px 20px;margin:0 0 22px;">
+          <p style="color:#92400e;font-size:13px;font-weight:700;margin:0 0 6px;letter-spacing:0.04em;text-transform:uppercase;">A note from ${escapeHtml(referrerName) || "your friend"}</p>
+          <p style="color:#78350f;font-size:14px;line-height:1.6;margin:0;font-style:italic;">&ldquo;${escapeHtml(personalNote)}&rdquo;</p>
+        </div>` : ""}
+        <div style="background:#f0fdf9;border:1px solid #99f6e4;border-radius:10px;padding:22px 24px;margin:0 0 22px;">
+          <p style="color:#0f766e;font-size:13px;font-weight:700;margin:0 0 12px;text-transform:uppercase;letter-spacing:0.05em;">What it actually does</p>
+          <ul style="color:#134e4a;font-size:14px;line-height:1.7;margin:0;padding-left:18px;">
+            <li><strong>Paste a job description</strong>, the AI rewrites your bullets to match it</li>
+            <li><strong>Live ATS scoring</strong> &mdash; see the keyword gap and an improve-to-95% pass</li>
+            <li><strong>27 professional templates</strong>, swap any time, your data stays the same</li>
+            <li><strong>PDF + DOCX export</strong> &mdash; recruiter-ready in minutes</li>
+          </ul>
+        </div>
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:20px 24px;margin:0 0 24px;">
+          <p style="color:#1e40af;font-size:13px;font-weight:700;margin:0 0 10px;text-transform:uppercase;letter-spacing:0.05em;">Honest pricing</p>
+          <table cellpadding="0" cellspacing="0" style="width:100%;">
+            <tr>
+              <td style="color:#475569;font-size:14px;padding:4px 0;"><strong style="color:#0f172a;">Rs.51</strong> &mdash; single resume download</td>
+              <td style="color:#0f766e;font-size:13px;text-align:right;font-weight:700;">Most popular</td>
+            </tr>
+            <tr>
+              <td style="color:#475569;font-size:14px;padding:4px 0;"><strong style="color:#0f172a;">Rs.199</strong> &mdash; Weekly Pass, 15 downloads, 7 days</td>
+              <td style="color:#f59e0b;font-size:13px;text-align:right;font-weight:700;">Special offer</td>
+            </tr>
+          </table>
+          <p style="color:#64748b;font-size:12px;margin:10px 0 0;line-height:1.5;">UPI / cards / netbanking via Razorpay. No subscription, no auto-renew, no card on file.</p>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 20px;margin:0 0 26px;">
+          <p style="color:#475569;font-size:12px;font-weight:600;margin:0;line-height:1.5;">
+            &#128274; <strong>Privacy guarantee:</strong> resume content is AES-256 encrypted and auto-deleted within 24 hours. Never shared with third parties.
+          </p>
+        </div>
+        <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+          <tr><td style="border-radius:12px;background:linear-gradient(135deg,#0f766e,#15803d);">
+            <a href="${appUrl()}/builder" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:12px;">Try ResumeAlignAI &rarr;</a>
+          </td></tr>
+        </table>
+        <p style="color:#94a3b8;font-size:12px;text-align:center;line-height:1.5;margin:24px 0 0;">
+          You're getting this because <strong>${escapeHtml(referrerName) || "a friend"}</strong> referred you. We won't email you again unless you sign up directly.
+        </p>
+      </td></tr>
+      ${emailFooter()}
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+
+const buildReferralConfirmationHtml = ({ referrerName, friendName, friendEmail }) => `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
+  <tr><td align="center">
+    <table cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;max-width:520px;width:100%;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+      ${emailHeader("Referral sent &mdash; thanks for spreading the word!")}
+      <tr><td style="padding:32px 40px;">
+        <p style="color:#1e293b;font-size:16px;margin:0 0 14px;">Hi <strong>${escapeHtml(referrerName) || "there"}</strong>,</p>
+        <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 18px;">
+          Your invite to <strong>${escapeHtml(friendName) || escapeHtml(friendEmail)}</strong> at <strong>${escapeHtml(friendEmail)}</strong> just went out. We appreciate you spreading the word &mdash; it's the highest signal we get that the product is actually useful.
+        </p>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 18px;">
+          If they sign up, we'll let you know (and we're working on a referral reward &mdash; coming soon).
+        </p>
+        <p style="color:#64748b;font-size:13px;line-height:1.5;margin:0;">
+          &ndash; The ResumeAlignAI team
+        </p>
+      </td></tr>
+      ${emailFooter()}
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+
+export const sendReferralInvite = async ({ referrerName, referrerEmail, friendName, friendEmail, personalNote }) => {
+  if (!friendEmail) return { sent: false, reason: "no_friend_email" };
+  try {
+    const transporter = await getTransporter();
+    const info = await transporter.sendMail({
+      from: fromAddress(),
+      replyTo: referrerEmail || replyToAddress(),
+      to: friendEmail,
+      subject: `${referrerName || "A friend"} thinks ResumeAlignAI can help your job search`,
+      html: buildReferralInviteHtml({ referrerName, friendName, personalNote })
+    });
+    logSent(info, friendEmail);
+    return { sent: true };
+  } catch (err) {
+    console.error("[emailService] Referral invite failed:", err.message);
+    return { sent: false, reason: err.message };
+  }
+};
+
+export const sendReferralConfirmation = async ({ referrerName, referrerEmail, friendName, friendEmail }) => {
+  if (!referrerEmail) return { sent: false, reason: "no_referrer_email" };
+  try {
+    const transporter = await getTransporter();
+    const info = await transporter.sendMail({
+      from: fromAddress(),
+      replyTo: replyToAddress(),
+      to: referrerEmail,
+      subject: `Your referral to ${friendName || friendEmail} was sent`,
+      html: buildReferralConfirmationHtml({ referrerName, friendName, friendEmail })
+    });
+    logSent(info, referrerEmail);
+    return { sent: true };
+  } catch (err) {
+    console.error("[emailService] Referral confirmation failed:", err.message);
+    return { sent: false, reason: err.message };
+  }
+};

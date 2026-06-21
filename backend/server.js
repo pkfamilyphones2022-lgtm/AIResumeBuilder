@@ -129,6 +129,16 @@ app.get("/version", (_req, res) => {
   });
 });
 
+// 5 referral emails per IP per hour — prevents using the referral form
+// as a free spam relay.
+const referralLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "You've sent the maximum referrals for now. Try again in an hour." }
+});
+
 app.use("/api/generate", aiLimiter);
 app.use("/api/improve", aiLimiter);
 app.use("/api/suggest", aiLimiter);
@@ -136,6 +146,7 @@ app.use("/api/upload", generalLimiter);
 app.use("/api/ats", generalLimiter);
 app.use("/api/payment", generalLimiter);
 app.use("/api/admin", generalLimiter);
+app.use("/api/referral", referralLimiter);
 app.use("/api", resumeRoutes);
 
 // 404 — route not found
