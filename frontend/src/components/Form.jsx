@@ -300,7 +300,9 @@ export default function Form({ mode = "experienced" }) {
       form.skills.trim() ||
       resumeText;
     if (!hasContent)
-      return "Add at least one experience, project, or education entry so the AI has content to work with.";
+      return fixedType === "Fresher"
+        ? "Add at least one academic project, internship/training, or education entry so the AI has content to work with."
+        : "Add at least one experience, project, or education entry so the AI has content to work with.";
     if (!challenge?.challengeId || !challengeAnswer.trim())
       return "Please complete the security check before generating.";
     return null;
@@ -778,13 +780,15 @@ export default function Form({ mode = "experienced" }) {
             }
           >
             <button className="mini-action" onClick={() => addEntry("projectsList", mkProject())}>
-              <Plus size={14} /> Add Project
+              <Plus size={14} /> {isExperienced ? "Add Project" : "Add Academic Project"}
             </button>
           </SectionHeader>
 
           {form.projectsList.length === 0 && (
             <p className="form-empty-hint">
-              Click <strong>Add Project</strong> to add projects. Strong project entries dramatically improve ATS scores for both freshers and experienced candidates.
+              Click <strong>{isExperienced ? "Add Project" : "Add Academic Project"}</strong> to add {isExperienced ? "projects" : "academic projects"}.
+              Strong project entries dramatically improve ATS scores
+              {isExperienced ? " for both freshers and experienced candidates" : " — they are the single biggest signal a fresher resume can carry"}.
             </p>
           )}
 
@@ -800,7 +804,7 @@ export default function Form({ mode = "experienced" }) {
               <div className="entry-block-head">
                 <span className="entry-block-label">
                   <FolderOpen size={13} />
-                  {proj.name || `Project ${i + 1}`}
+                  {proj.name || `${isExperienced ? "Project" : "Academic Project"} ${i + 1}`}
                 </span>
                 <button className="mini-danger" onClick={() => removeEntry("projectsList", i)}>
                   <Trash2 size={13} /> Remove
@@ -1044,7 +1048,9 @@ export default function Form({ mode = "experienced" }) {
           form.trainingList.length === 0 &&
           !form.coursework.trim() && (
           <p className="builder-note">
-            Add your experience, projects, and education above — the more structured detail you provide, the stronger the AI output.
+            {isExperienced
+              ? "Add your experience, projects, and education above — the more structured detail you provide, the stronger the AI output."
+              : "Add your academic projects, internship/training, and education above — the more structured detail you provide, the stronger the AI output."}
           </p>
         )}
         {uploadHint && (
