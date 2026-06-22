@@ -806,7 +806,7 @@ export default function App() {
             whileTap={{ scale: 0.97 }}
             onClick={() => navigateTo("/builder", setPathname)}
           >
-            Try the Builder <Zap size={14} />
+            See How It Works <Zap size={14} />
           </motion.button>
         </div>
       </motion.div>

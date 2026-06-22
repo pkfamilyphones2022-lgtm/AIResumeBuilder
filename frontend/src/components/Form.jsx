@@ -997,7 +997,7 @@ export default function Form({ mode = "experienced" }) {
                   ? "Parsing PDF..."
                   : resumeText
                   ? "Resume loaded"
-                  : "Choose PDF"}
+                  : "Drop My Resume"}
               </label>
               <input
                 id={`resume-upload-${fixedType}`}
@@ -1107,7 +1107,7 @@ export default function Form({ mode = "experienced" }) {
           whileTap={{ scale: 0.98 }}
         >
           <Sparkles aria-hidden="true" />
-          {loading ? loadingMsg : isExperienced ? "Generate Experienced Resume" : "Generate Fresher Resume"}
+          {loading ? loadingMsg : "Align My Resume"}
         </motion.button>
       </motion.section>
 
@@ -1140,7 +1140,7 @@ export default function Form({ mode = "experienced" }) {
               <FileText aria-hidden="true" />
               <strong>Preview activates after generation</strong>
               <p>
-                Fill the fields marked with <span className="required-star">*</span>, add at least one resume content source, then click Generate Resume.
+                Fill the fields marked with <span className="required-star">*</span>, add at least one resume content source, then click Align My Resume.
               </p>
             </motion.div>
           )}

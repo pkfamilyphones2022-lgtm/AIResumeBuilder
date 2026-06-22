@@ -187,7 +187,7 @@ export default function ATSScore({ resume, job, jobTitle, initialData, result, o
         </div>
         <button className="ats-refresh-btn" onClick={check} disabled={checking}>
           <Activity size={16} />
-          {checking ? "Checking…" : "Refresh"}
+          {checking ? "Checking…" : "See My Score"}
         </button>
       </div>
 
