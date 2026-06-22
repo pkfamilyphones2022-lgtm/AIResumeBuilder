@@ -35,21 +35,22 @@ const setListByText = (text) =>
     .filter(Boolean);
 
 function AtsSneakPeek({ before, after, onPay, unlocked = false }) {
-  // Reasonable defaults so the banner always shows a credible delta:
-  //   - target falls back to 88 if the post-gen ATS hasn't returned yet
-  //   - before falls back to ~target-55 (floor 22) for users who didn't
-  //     upload a PDF, so the "before" feels like a real starting point
-  //     instead of an em-dash with a nonsensical delta.
+  // The Before pill only renders when we have a real "before" number —
+  // which only happens when the user actually uploaded a PDF. For manually
+  // filled forms, drop the Before pill entirely and just surface the After
+  // score (no synthetic fallback, no fake delta).
+  const hasBefore = before != null;
   const target = Math.max(40, Math.min(99, Math.round(after ?? 88)));
-  const beforeValue = before != null
-    ? before
-    : Math.max(22, Math.min(target - 30, target - 55 + 30));
-  const [displayed, setDisplayed] = useState(beforeValue);
+  const [displayed, setDisplayed] = useState(hasBefore ? before : target);
 
   useEffect(() => {
+    if (!hasBefore) {
+      setDisplayed(target);
+      return undefined;
+    }
     let raf = null;
     let start = null;
-    const from = beforeValue;
+    const from = before;
     const to = target;
     if (from === to) {
       setDisplayed(to);
@@ -65,9 +66,9 @@ function AtsSneakPeek({ before, after, onPay, unlocked = false }) {
     };
     raf = requestAnimationFrame(tick);
     return () => raf && cancelAnimationFrame(raf);
-  }, [beforeValue, target]);
+  }, [before, target, hasBefore]);
 
-  const delta = target - beforeValue;
+  const delta = hasBefore ? target - before : 0;
 
   return (
     <motion.div
@@ -78,26 +79,36 @@ function AtsSneakPeek({ before, after, onPay, unlocked = false }) {
     >
       <div className="ats-sneak-head">
         <Sparkles size={16} aria-hidden="true" />
-        <strong>Proof of value — your ATS score, before vs after AI alignment</strong>
+        <strong>
+          {hasBefore
+            ? "Proof of value — your ATS score, before vs after AI alignment"
+            : "Your AI-aligned ATS score"}
+        </strong>
       </div>
       <div className="ats-sneak-meter">
-        <div className="ats-sneak-pill ats-sneak-pill--before">
-          <span>Before</span>
-          <strong>{beforeValue}%</strong>
-        </div>
-        <div className="ats-sneak-arrow"><TrendingUp size={20} /></div>
+        {hasBefore && (
+          <>
+            <div className="ats-sneak-pill ats-sneak-pill--before">
+              <span>Before</span>
+              <strong>{before}%</strong>
+            </div>
+            <div className="ats-sneak-arrow"><TrendingUp size={20} /></div>
+          </>
+        )}
         <div className="ats-sneak-pill ats-sneak-pill--after">
           <span>After</span>
           <strong>{displayed}%</strong>
         </div>
-        {delta > 0 && (
+        {hasBefore && delta > 0 && (
           <span className="ats-sneak-delta">+{delta} pts</span>
         )}
       </div>
       <p className="ats-sneak-copy">
         {unlocked
           ? "Your edits update this score live — keep tweaking and re-download anytime."
-          : "We rewrote your bullets to match the JD keywords. Unlock the clean PDF to send it."}
+          : hasBefore
+            ? "We rewrote your bullets to match the JD keywords. Unlock the clean PDF to send it."
+            : "Upload your existing PDF on the builder to see how much your starting score improves — or just unlock the clean PDF below."}
       </p>
       {!unlocked && (
         <button className="ats-sneak-cta" onClick={onPay} type="button">

@@ -329,15 +329,16 @@ export default function Form({ mode = "experienced" }) {
       });
       setResult(normalizeResumeData(response.data.result));
       setAtsData(response.data.ats || null);
-      // Snapshot a quick "before" score against the JD. This is what the
-      // sneak-peek Before -> After banner shows on the unpaid Preview.
-      // We flatten the entire user-submitted payload (including nested
-      // experience/projects/training arrays) into a single haystack string
-      // so manually-filled forms get a fair before-score, not just uploads.
-      const sourceText = (resumeText && resumeText.trim())
-        ? resumeText
-        : JSON.stringify(buildUserData());
-      setBeforeScore(computeBeforeScore(sourceText, form.job));
+      // Snapshot a quick "before" score against the JD — ONLY if the user
+      // uploaded a real PDF. A manually-filled form has no "before" worth
+      // showing because the user has not yet attempted a tailored resume.
+      // The before -> after comparison only makes sense as proof of how
+      // much an existing resume gained from AI alignment.
+      if (resumeText && resumeText.trim()) {
+        setBeforeScore(computeBeforeScore(resumeText, form.job));
+      } else {
+        setBeforeScore(null);
+      }
       if (response.data.userId) setUserId(response.data.userId);
       if (response.data.resumeId) setResumeId(response.data.resumeId);
     } catch (err) {
