@@ -1595,7 +1595,7 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
       )}
 
       <div
-        className={`preview-stage${!viewOnly && !paid && !(subscription && subscription.remaining > 0) ? " preview-stage-locked" : ""}`}
+        className="preview-stage"
         ref={stageRef}
         onContextMenu={blockPreviewCopy}
         onCopy={blockPreviewCopy}
@@ -1618,18 +1618,6 @@ export default function Preview({ result, onChange, defaultTemplate, userId, res
         >
           <ResumeDocument resume={resume} selectedTemplate={selectedTemplate} resumeRef={previewRef} />
         </div>
-        {!viewOnly && !paid && !(subscription && subscription.remaining > 0) && (
-          <div className="preview-lock-overlay" aria-hidden="true">
-            <div className="preview-lock-card">
-              <LockKeyhole size={26} />
-              <strong>Pay Rs.51 to unlock the readable PDF</strong>
-              <span>Preview is intentionally blurred — your name, structure, and ATS score are real.</span>
-              <button className="preview-lock-cta" onClick={() => startPayment("single")} type="button">
-                Unlock for Rs.51
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {!viewOnly && <div className="resume-editor">
